@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1b5e6e">
 <meta name="color-scheme" content="light only">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>FormuLab 剂型通</title>
 <link rel="manifest" href="manifest.json">
@@ -187,7 +189,7 @@ button:focus-visible,select:focus-visible{outline:3px solid var(--oil);outline-o
 <main>
   <section id="v-lib" class="view on">
     <p class="lead" data-t="libLead"></p>
-    <input id="libSearch" type="search" placeholder="" oninput="libQ=this.value;renderLib()" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:1.067rem;margin-bottom:8px;background:#fff">
+    <input id="libSearch" name="libSearch" type="search" placeholder="" aria-label="search" oninput="libQ=this.value;renderLib()" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:1.067rem;margin-bottom:8px;background:#fff">
     <div class="seg" id="libFilters" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px"></div>
     <div id="libList"></div>
   </section>
@@ -696,7 +698,7 @@ function jar(type,size){
 const JAR3 = {zh:['溶液','乳液','悬浮液'],en:['Solution','Emulsion','Suspension'],ms:['Larutan','Emulsi','Ampaian']};
 
 /* ---------- text size ---------- */
-const APP_VER='v60';
+const APP_VER='v61';
 const SIZES=[18,20,22]; const SIZE_LABEL=['Aa','Aa+','Aa++'];
 function applySize(){ const i=+(localStorage.getItem('fx_size')||0); document.documentElement.style.fontSize=SIZES[i]+'px'; document.documentElement.classList.toggle('xl',i===2); const b=document.getElementById('sizeBtn'); if(b) b.textContent=SIZE_LABEL[i]; }
 function cycleSize(){ const i=(+(localStorage.getItem('fx_size')||0)+1)%SIZES.length; localStorage.setItem('fx_size',i); applySize(); }
@@ -841,7 +843,7 @@ function renderPickForm(){
   const ai=sessionStorage.getItem('fx_ai')||'0';
   document.getElementById('aiType').innerHTML=seg(t('ai'),ai,'setAI(',1);
   const pri=getPri();
-  document.getElementById('priList').innerHTML = t('pri').map((x,i)=>`<label class="opt ${pri.includes(i)?'on':''}"><input type="checkbox" ${pri.includes(i)?'checked':''} onchange="togglePri(${i},this)">${x}</label>`).join('');
+  document.getElementById('priList').innerHTML = t('pri').map((x,i)=>`<label class="opt ${pri.includes(i)?'on':''}"><input type="checkbox" name="pri-${i}" ${pri.includes(i)?'checked':''} onchange="togglePri(${i},this)">${x}</label>`).join('');
 }
 function togglePri(i,el){
   let pri=getPri();
@@ -897,7 +899,7 @@ function renderMixForm(){
     if(k==='dish') return `<button type="button" class="opt banned ${sessionStorage.getItem('fx_dishinfo')==='1'?'on':''}" onclick="toggleDishInfo()"><span class="x">✗</span><span>${t('mixOther').dish}</span></button>`;
     const q=getQty()[k]||1;
     const chip = (f && cur.includes(k)) ? `<button type="button" class="qty" onclick="event.preventDefault();cycleQty('${k}')">×${q}</button>` : '';
-    return `<label class="opt ${cur.includes(k)?'on':''}"><input type="checkbox" ${cur.includes(k)?'checked':''} onchange="toggleMix('${k}',this)"><span>${label}</span>${chip}</label>`;
+    return `<label class="opt ${cur.includes(k)?'on':''}"><input type="checkbox" name="mix-${k}" ${cur.includes(k)?'checked':''} onchange="toggleMix('${k}',this)"><span>${label}</span>${chip}</label>`;
   };
   const pest=MIX_ITEMS.filter(k=>F.find(x=>x.c===k)), adj=MIX_ITEMS.filter(k=>!F.find(x=>x.c===k));
   document.getElementById('mixList').innerHTML = `<div class="grp">${t('grpPest')}</div><div class="grid2">${pest.map(item).join('')}</div><div class="grp">${t('grpAdj')}</div><div class="grid2">${adj.map(item).join('')}</div>`;
@@ -1011,16 +1013,16 @@ function calcHTML(){
     const sg=(name,val,opts,cols)=>seg(opts.map(o=>({v:o,l:o})),val,`calcSetVal('${k}','${name}',`,cols);
     return `<div class="col"><b>${C[k==='A'?'ta':'tb']}${p.code?' · '+p.code:''}</b>
     <label>${C.form}</label>${seg([{v:'liq',l:C.liq},{v:'sol',l:C.sol}],liq?'liq':'sol',`calcSetVal('${k}','form',`,1)}
-    <label>${C.load}</label><div class="u"><input type="number" inputmode="decimal" data-c="${k}.load" value="${p.load??''}" oninput="calcSet(this)"></div>${sg('lu',lu,luOpts,1)}
-    ${lu==='% w/w'?`<label>${t('calc2').den}</label><input type="number" inputmode="decimal" data-c="${k}.den" value="${p.den??''}" placeholder="1.0" oninput="calcSet(this)">`:''}
-    <label>${C.pack}</label><div class="u"><input type="number" inputmode="decimal" data-c="${k}.pack" value="${p.pack??''}" oninput="calcSet(this)"></div>${sg('pu',pu,puOpts,2)}
+    <label>${C.load}</label><div class="u"><input type="number" inputmode="decimal" id="calc-${k}-load" name="calc-${k}-load" aria-label="${C.load}" data-c="${k}.load" value="${p.load??''}" oninput="calcSet(this)"></div>${sg('lu',lu,luOpts,1)}
+    ${lu==='% w/w'?`<label>${t('calc2').den}</label><input type="number" inputmode="decimal" id="calc-${k}-den" name="calc-${k}-den" aria-label="${t('calc2').den}" data-c="${k}.den" value="${p.den??''}" placeholder="1.0" oninput="calcSet(this)">`:''}
+    <label>${C.pack}</label><div class="u"><input type="number" inputmode="decimal" id="calc-${k}-pack" name="calc-${k}-pack" aria-label="${C.pack}" data-c="${k}.pack" value="${p.pack??''}" oninput="calcSet(this)"></div>${sg('pu',pu,puOpts,2)}
     <div class="presets">${presets.map(([v,u])=>`<button type="button" class="${+p.pack===v&&pu===u?'on':''}" onclick="calcPreset('${k}',${v},'${u}')">${v} ${u}</button>`).join('')}</div>
-    <label>${C.price}</label><input type="number" inputmode="decimal" data-c="${k}.price" value="${p.price??''}" oninput="calcSet(this)">
-    <label>${C.rate}</label><div class="u rate"><input type="number" inputmode="decimal" data-c="${k}.rate" value="${p.rate??''}" oninput="calcSet(this)"></div>${seg([{v:'tank',l:`${liq?'ml':'g'} ${C.ru.tank}`},{v:'per100',l:`${liq?'ml':'g'} ${C.ru.per100}`},{v:'ratio',l:C.ru.ratio}],p.ru||'tank',`calcSetVal('${k}','ru',`,1)}
+    <label>${C.price}</label><input type="number" inputmode="decimal" id="calc-${k}-price" name="calc-${k}-price" aria-label="${C.price}" data-c="${k}.price" value="${p.price??''}" oninput="calcSet(this)">
+    <label>${C.rate}</label><div class="u rate"><input type="number" inputmode="decimal" id="calc-${k}-rate" name="calc-${k}-rate" aria-label="${C.rate}" data-c="${k}.rate" value="${p.rate??''}" oninput="calcSet(this)"></div>${seg([{v:'tank',l:`${liq?'ml':'g'} ${C.ru.tank}`},{v:'per100',l:`${liq?'ml':'g'} ${C.ru.per100}`},{v:'ratio',l:C.ru.ratio}],p.ru||'tank',`calcSetVal('${k}','ru',`,1)}
     </div>`;};
   const backs=['A','B'].filter(k=>st[k]&&st[k].code).map(k=>`<button class="btn-clear" style="margin-right:6px" onclick="backToCard('${st[k].code}')">← ${t('backTo').replace('{c}',st[k].code)}</button>`).join('');
   return `<div class="calc"><div class="hrow" style="display:flex;justify-content:space-between;align-items:center"><h4 style="margin:0 0 8px">${C.title}</h4><button class="btn-clear" onclick="clearCalc()">${t('clear')}</button></div>${backs?`<div style="margin-bottom:8px">${backs}</div>`:''}<div class="cols">${col('A')}${col('B')}</div>
-  <div style="font-size:0.85rem;color:var(--ink);margin-top:6px">${C.wvHint}</div><div class="tank"><label>${C.tank}</label><input type="number" inputmode="decimal" data-c="tank" value="${st.tank??16}" oninput="calcSet(this)"></div>
+  <div style="font-size:0.85rem;color:var(--ink);margin-top:6px">${C.wvHint}</div><div class="tank"><label>${C.tank}</label><input type="number" inputmode="decimal" id="calc-tank" name="calc-tank" aria-label="${C.tank}" data-c="tank" value="${st.tank??16}" oninput="calcSet(this)"></div>
   <div id="calcOut">${calcOut()}</div></div>`;
 }
 function calcSet(el){
@@ -1092,7 +1094,7 @@ function bottleHTML(){
   return `<div class="calc"><h4>${B.title}</h4>
   <label>${B.type}</label>${types}<label>${B.store}</label>${sel('store',B.stores,st.store,1)}<label>${B.age}</label>${sel('age',B.ages,st.age,3)}
   <label>${t('expiry')}</label>${seg(t('expiryOpts'),st.exp||'0',"bottleSet('exp',",3)}
-  <label>${B.see}</label><div class="grid2">${B.sees.map((x,i)=>`<label class="opt ${(st.see||[]).includes(i)?'on':''}"><input type="checkbox" ${(st.see||[]).includes(i)?'checked':''} onchange="bottleSee(${i},this)">${x}</label>`).join('')}</div>
+  <label>${B.see}</label><div class="grid2">${B.sees.map((x,i)=>`<label class="opt ${(st.see||[]).includes(i)?'on':''}"><input type="checkbox" name="bottle-see-${i}" ${(st.see||[]).includes(i)?'checked':''} onchange="bottleSee(${i},this)">${x}</label>`).join('')}</div>
   <div id="bottleOut">${bottleOut()}</div></div>`;
 }
 function bottleOut(){
