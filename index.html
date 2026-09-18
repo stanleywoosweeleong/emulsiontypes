@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b5e6e">
+<meta name="color-scheme" content="light only">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FormuLab 剂型通</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="FormuLab 剂型通">
+<style>
+:root{
+  --bg:#f3f6f5; --panel:#ffffff; --ink:#10241f; --muted:#4a5f5a; --soft:#2f4640; --line:#d8e0dd;
+  --water:#1b5e6e; --water-soft:#dceef2; --oil:#c98a1b; --oil-soft:#fbefd6;
+  --powder:#8a8578; --powder-soft:#ebe8e0; --ok:#2e7d4f; --warn:#b8471b; --warn-soft:#fbe6dc;
+  --r:12px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{color-scheme:light only}
+html{font-size:18px}
+html,body{margin:0;background:var(--bg)!important;color:var(--ink);font:600 1rem/1.6 "PingFang SC",-apple-system,system-ui,"Noto Sans CJK SC","Noto Sans SC","Segoe UI",Roboto,sans-serif;letter-spacing:.01em;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+
+header{position:sticky;top:0;z-index:10;background:var(--water);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;align-items:center;gap:10px}
+header h1{font-size:1.2rem;min-width:0;font-weight:600;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.2px}
+html.xl header h1 small{display:none}
+header h1 small{font-weight:400;opacity:.8;font-size:0.867rem;margin-left:6px}
+#langBtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:5px 10px;min-width:48px;font-weight:600}
+
+main{padding:14px 14px calc(78px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+.view{display:none}.view.on{display:block}
+h2{font-size:1.133rem;font-weight:700;margin:18px 0 8px}
+p.lead{color:var(--ink);margin:0 0 12px;font-size:0.94rem;line-height:1.45;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:10}
+nav button{flex:1;background:none;border:0;padding:9px 2px 7px;color:var(--soft);font-size:0.85rem;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button svg{width:22px;height:22px;fill:currentColor}
+nav button.on{color:var(--water)}
+
+/* library */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;font-size:0.9rem}
+.chip.on{background:var(--water-soft);color:var(--water);border-color:var(--water);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.card>button.head{width:100%;background:none;border:0;text-align:left;padding:12px 12px;display:flex;align-items:center;gap:12px}
+.head .jar{flex:0 0 46px}
+.head .t{flex:1;min-width:0}
+.head .code{font-weight:800;font-size:1.267rem;letter-spacing:.4px}
+.head .code em{font-style:normal;font-weight:600;font-size:0.9rem;color:var(--soft);margin-left:8px}
+.head .sub{font-size:0.92rem;color:var(--soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head .chev{color:var(--muted);transition:transform .2s}
+.card.open .chev{transform:rotate(90deg)}
+.body{display:none;padding:0 12px 12px;border-top:1px dashed var(--line)}
+.card.open .body{display:block}
+.row{display:grid;grid-template-columns:92px 1fr;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:0.933rem}
+.row:last-child{border-bottom:0}
+.row .k{color:var(--soft);font-size:0.867rem;font-weight:600;padding-top:1px}
+ul.pc{margin:0;padding-left:0;list-style:none}
+ul.pc li{padding-left:20px;position:relative;margin:2px 0}
+ul.pc li::before{position:absolute;left:0;font-weight:700}
+ul.pro li::before{content:"✓";color:var(--ok)}
+ul.con li::before{content:"✗";color:var(--warn)}
+.tag{display:inline-block;font-size:0.85rem;padding:2px 8px;border-radius:6px;margin:2px 4px 2px 0}
+.tag.water{background:var(--water-soft);color:var(--water)}
+.tag.oil{background:var(--oil-soft);color:#7a5210}
+.tag.powder{background:var(--powder-soft);color:#5b574d}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.dots{letter-spacing:2px;color:var(--water)}
+
+/* segmented buttons */
+.seg{display:grid;gap:6px;margin-bottom:4px}
+.seg button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:10px 8px;font-size:0.94rem;font-weight:600;line-height:1.3;text-align:center;min-height:38px}
+.seg button.on{background:var(--water-soft);border-color:var(--water);color:var(--water);font-weight:800}
+.seg.multi button{text-align:left;padding:10px 12px}
+.seg.codes button{padding:7px 2px;font-size:0.867rem;font-weight:600;letter-spacing:.3px}
+.seg.codes button.on{font-weight:700}
+.seg-share{display:block;width:100%;margin-top:10px;background:#25D366;color:#fff;border:0;border-radius:8px;padding:12px;font-size:1rem;font-weight:700}
+.opt.banned{border-color:var(--warn);color:var(--warn);background:var(--warn-soft);font-weight:700;text-align:left}
+.opt.banned .x{font-size:1.2rem;font-weight:900;margin-right:2px}
+.opt.banned.on{background:var(--warn);color:#fff}
+.cmpbar{background:var(--water-soft);border:1px solid var(--water);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cmpbar b{flex:1}
+.cmptable{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px;margin-bottom:12px}
+.cmptable table{table-layout:fixed}
+.cmptable th:first-child,.cmptable td:first-child{width:34%}
+.cmptable td.win{background:#dff3e6;font-weight:800}
+.cmptable .dots{font-size:0.9rem}
+.grp{font-size:0.9rem;font-weight:800;color:var(--water);margin:8px 0 6px;letter-spacing:.02em}
+.qty{margin-left:auto;border:1px solid var(--water);background:#fff;color:var(--water);border-radius:6px;padding:2px 8px;font-size:0.85rem;font-weight:800;white-space:nowrap}
+.seg-name{font-size:0.85rem;color:var(--soft);margin:2px 0 6px}
+.calc label.opt{display:flex;font-size:0.9rem;color:var(--ink);margin-top:0}
+/* settings block (chooser / mix) */
+.settings{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.settings h3{margin:0 0 8px;font-size:0.967rem;font-weight:700}
+.settings .hrow{display:flex;align-items:center;justify-content:space-between}
+.settings .hrow h3{margin:0}
+.btn-clear{border:1px solid var(--line);background:#fff;border-radius:8px;padding:4px 10px;font-size:0.85rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+label.opt{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:0.94rem;background:#fff}
+label.opt input{width:18px;height:18px;margin:0;accent-color:var(--water)}
+label.opt.on{border-color:var(--water);background:var(--water-soft)}
+select{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 10px;background:#fff;font:inherit;font-size:1.067rem}
+.rank{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;display:grid;grid-template-columns:46px 1fr auto;gap:10px;align-items:center}
+.rank.top{border-color:var(--water);box-shadow:0 0 0 2px var(--water-soft)}
+.rank .n{font-weight:800;font-size:1.2rem}
+.rank .n em{font-style:normal;font-weight:500;font-size:0.867rem;color:var(--muted);margin-left:6px}
+.rank .why{font-size:0.867rem;color:var(--soft)}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--water)}
+.score{font-weight:600;color:var(--water)}
+.steps{counter-reset:s}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px 10px 48px;margin-bottom:8px;position:relative;font-size:0.933rem}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:12px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--water);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.933rem}
+.step .codes{font-weight:800;letter-spacing:.5px}
+.step .h{color:var(--ink);font-size:0.867rem;margin-top:2px}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);border-radius:8px;padding:9px 12px;font-size:0.9rem;line-height:1.45;margin:10px 0}
+.info{background:var(--water-soft);border-left:4px solid var(--water);border-radius:8px;padding:9px 12px;font-size:0.9rem;line-height:1.45;margin:10px 0}
+.empty{color:var(--soft);font-size:0.867rem;padding:12px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin-bottom:8px}
+
+/* science */
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:8px}
+summary{padding:11px 12px;font-weight:700;font-size:0.967rem;cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"›";margin-left:auto;color:var(--muted);font-size:1.333rem;transition:transform .2s}
+details[open] summary::after{transform:rotate(90deg)}
+details .in{padding:0 12px 12px;font-size:0.933rem;line-height:1.5}
+details .in p{margin:6px 0}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:0.867rem;margin:8px 0}
+.three svg{width:100%;height:auto}
+table{border-collapse:collapse;width:100%;font-size:0.867rem}
+td,th{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{background:var(--bg);font-weight:600}
+
+/* calculator */
+.calc{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;margin:4px 0 12px}
+.calc h4{margin:0 0 8px;font-size:1.0rem}
+.calc .cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.calc .col{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}
+.calc .col b{display:block;margin-bottom:6px}
+.calc label{display:block;font-size:0.85rem;color:var(--soft);font-weight:600;margin-top:6px}
+.calc input,.calc select{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 8px;font:inherit;font-size:1.067rem;background:#fff}
+.calc .u{display:grid;grid-template-columns:1fr;gap:4px}
+.calc .u.rate{grid-template-columns:1fr}
+.calc .u select{padding:7px 4px}
+.calc .presets{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.calc .presets button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 8px;font-size:0.85rem}
+.calc .presets button.on{background:var(--water);color:#fff;border-color:var(--water)}
+.calc>label{display:block;font-size:0.85rem;color:var(--muted);margin-top:6px}
+.calc>select{width:100%;border:1px solid var(--line);border-radius:6px;padding:7px 8px;font:inherit;background:#fff}
+.calc .tank{margin-top:8px}
+.calc .tank label{display:inline-block;margin:0 8px 0 0}
+.calc .tank input{width:90px}
+.calc table{margin-top:10px;background:#fff}
+.calc .verdict{margin-top:10px}
+/* language picker */
+#langPick{position:fixed;inset:0;background:var(--water);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:50;padding:24px}
+#langPick.on{display:flex}
+#langPick svg{width:110px;height:110px;margin-bottom:6px}
+#langPick h1{margin:0;font-size:1.6rem}
+#langPick button{width:min(280px,80vw);background:#fff;color:var(--water);border:0;border-radius:10px;padding:14px;font-size:1.2rem;font-weight:600}
+#langPick .hint{opacity:.75;font-size:0.867rem;margin-top:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+button:focus-visible,select:focus-visible{outline:3px solid var(--oil);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div id="langPick">
+  <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M30 12h40v10h-6v8c10 6 16 17 16 30 0 20-14 32-30 32S20 80 20 60c0-13 6-24 16-30v-8h-6z" fill="#fff"/><path d="M28 60c0-11 5-20 12-25v-9h20v9c7 5 12 14 12 25 0 16-10 25-22 25S28 76 28 60z" fill="#dceef2"/><circle cx="42" cy="58" r="4" fill="#c98a1b"/><circle cx="56" cy="64" r="5" fill="#c98a1b"/><circle cx="48" cy="72" r="3" fill="#c98a1b"/><circle cx="60" cy="52" r="3" fill="#c98a1b"/></svg>
+  <h1>FormuLab 剂型通</h1>
+  <button onclick="setLang('zh',true)">中文</button>
+  <button onclick="setLang('en',true)">English</button>
+  <button onclick="setLang('ms',true)">Malay</button>
+</div>
+
+<header>
+  <h1 id="title">剂型通</h1>
+  <button id="sizeBtn" onclick="cycleSize()" aria-label="text size" style="background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;padding:5px 9px;font-weight:600;min-width:44px">Aa</button>
+  <button id="langBtn" onclick="cycleLang()">中文</button>
+</header>
+
+<main>
+  <section id="v-lib" class="view on">
+    <p class="lead" data-t="libLead"></p>
+    <input id="libSearch" type="search" placeholder="" oninput="libQ=this.value;renderLib()" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:inherit;font-size:1.067rem;margin-bottom:8px;background:#fff">
+    <div class="seg" id="libFilters" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px"></div>
+    <div id="libList"></div>
+  </section>
+
+  <section id="v-pick" class="view">
+    <p class="lead" data-t="pickLead"></p>
+    <div class="settings">
+      <h3 data-t="pickKind"></h3>
+      <div id="kind"></div>
+      <h3 style="margin-top:12px" data-t="pickPurpose"></h3>
+      <div id="purpose"></div>
+      <div id="purposeNote"></div>
+      <h3 style="margin-top:12px" data-t="pickSprayer"></h3>
+      <div id="sprayer"></div>
+      <div id="sprayerNote"></div>
+      <h3 style="margin-top:12px" data-t="pickAI"></h3>
+      <div id="aiType"></div>
+      <div class="hrow" style="margin-top:12px"><h3 data-t="pickPri"></h3><button class="btn-clear" data-t="clear" onclick="clearPri()"></button></div>
+      <div class="grid2" id="priList"></div>
+    </div>
+    <div id="pickOut"></div>
+  </section>
+
+  <section id="v-mix" class="view">
+    <p class="lead" data-t="mixLead"></p>
+    <div class="settings">
+      <div class="hrow"><h3 data-t="mixStage"></h3><button class="btn-clear" data-t="clear" onclick="clearMix()"></button></div>
+      <div id="stageSel"></div><div id="stageNote"></div>
+      <h3 style="margin-top:12px" data-t="sprayerFrom"></h3>
+      <div id="mixSprayer"></div><div id="mixSprayerNote"></div>
+      <h3 style="margin-top:12px" data-t="mixWhat"></h3>
+      <div id="mixList"></div>
+      <h3 style="margin-top:12px" data-t="mixActives"></h3>
+      <div class="seg multi" id="actList" style="grid-template-columns:1fr 1fr"></div>
+    </div>
+    <div id="mixOut"></div>
+  </section>
+
+  <section id="v-sci" class="view">
+    <p class="lead" data-t="sciLead"></p>
+    <div id="sciList"></div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="lib" class="on" onclick="show('lib')"><svg viewBox="0 0 24 24"><path d="M8 3h8v3h-2v3.2c2.4 1.1 4 3.5 4 6.3 0 3.6-2.7 6.5-6 6.5s-6-2.9-6-6.5c0-2.8 1.6-5.2 4-6.3V6H8z"/></svg><span data-t="navLib"></span></button>
+  <button data-v="pick" onclick="show('pick')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="12" height="3" rx="1.5"/><rect x="3" y="10.5" width="18" height="3" rx="1.5"/><rect x="3" y="16" width="8" height="3" rx="1.5"/></svg><span data-t="navPick"></span></button>
+  <button data-v="mix" onclick="show('mix')"><svg viewBox="0 0 24 24"><path d="M4 4h16l-6 8v7l-4 2v-9z"/></svg><span data-t="navMix"></span></button>
+  <button data-v="sci" onclick="show('sci')"><svg viewBox="0 0 24 24"><path d="M9 3h6v2h-1v5.5l5 8.5c.6 1-.1 2-1.2 2H6.2C5.1 21 4.4 20 5 19l5-8.5V5H9zm2 2v6.1l-2.6 4.4h7.2L13 11.1V5z"/></svg><span data-t="navSci"></span></button>
+</nav>
+
+<script>
+/* ---------- i18n ---------- */
+const L = {
+zh:{search:'搜索代码或名称，例如 EW、悬浮剂',kDrone:'无人机',droneL:['不适合','谨慎','可用','适合'],droneWhy:{OD:'油相自带抗蒸发和展布，中国飞防首选',UL:'超低容量专用，原液或油稀释',OF:'超低容量专用',SC:'颗粒细、水基、无溶剂，飞防杀菌剂最常用；要搅拌',ME:'已溶解、亚微米油滴、透明稳定，不堵',EW:'已溶解、油滴细，不堵',SL:'真溶液，没有东西会堵或沉',EC:'能用，但地面一英亩用 300 L 水，无人机只用 12 L，同样的药量在桶里浓了约 25 倍；标签没有飞防用量就别自己换算',WG:'先在桶外完全散开、选细粉产品才能装机',WP:'颗粒粗、磨泵、堵细喷头',CS:'高压泵打碎囊壁',ZC:'含微囊，同 CS',ZE:'含微囊，同 CS'},grpNames:{emu:'乳液类：油滴在水里',sus:'悬浮类：固体颗粒在水里',cap:'微囊类：药包在囊里',sol:'溶液类：完全溶于水',ulv:'油稀释 / 超低容量：不加水',dry:'不兑水：撒施'},backTo:'返回 {c} 卡片',cmp:{btn:'对比',btnOn:'已选',pick1:'已选 {a}，再点一个剂型的「对比」',title:'{a} 对 {b}',clear:'取消对比',toPrice:'比两瓶价格 →',rowDilute:'兑水后',rowAgit:'搅拌需求',rowDrone:'无人机',rowAvail:'马来西亚货架',rowStore:'储存',rowSafe:'安全',better:'较好',same:'相同',note:'●●● 最好，○○○ 最差。绿色格是这一行较好的一方。评分为经验判断。'},kAvail:'马来西亚货架',availL:['几乎买不到','少见','有','常见'],rare:'少见',
+ pickKind:'产品类型',kinds:['杀菌剂','杀虫剂'],
+ purposeI:['跳过','击倒：见虫就要死（触杀）','持效：喷一次管久一点（残留）','内吸：对付吸汁类害虫'],
+ purposeNoteI:{1:'击倒靠药快速接触虫体，溶解态（EC、EW、ME）铺展和渗透最快。已勾选「快速吸收」。',2:'持效靠留在叶面的药膜，颗粒型和微囊型留得久。已勾选「持效保护层」。',3:'吸汁类害虫（蚜虫、粉蚧、木虱）要药进到植物汁液里，只有内吸性有效成分做得到，剂型只影响进得多快。已勾选「快速吸收」。'},
+ pickSprayer:'喷雾器',sprayers:['背负式 / 电动喷雾器','弥雾机 / 果园风送','无人机'],
+ sprayerNote:{2:'无人机每英亩只有 10–15 L 水、喷头极细。排名已按无人机适应性调整：适合 OD；可用 SC、ME、EW、SL；谨慎 EC、WG；已排除 WP 和微囊类（CS、ZC、ZE）。每张剂型卡都有「无人机」一行说明原因。'},
+ scoreNote:'评分为经验判断，不是测量数据。',
+ mixActives:'桶里的有效成分（可选，让提醒更准）',
+ mixSteps2:{rinse:'喷完立刻清洗：桶、管、喷头冲三遍，洗水喷在已喷过的树上，不要倒进水沟'},
+ oilCarriers:{EC:'EC',ME:'ME',DC:'DC',OD:'OD',EO:'EO',oil:'矿物油 / 植物油'},warnOilStack:'<b>桶里有 {n} 份油或溶剂载体：{list}。一桶只放一份。</b><br>烧叶的不是油本身，是跟着油来的三样东西：EC 的溶剂一落叶就溶蜡；每个产品自带的乳化剂叠加后，把药液推进细胞；油膜变厚堵住气孔，下午的太阳把叶子煮熟。<br>最先出事的是嫩梢、花和高尔夫球以下的幼果，老叶反而扛得住——所以同一个配方上周没事，这周烧掉一批新梢。<br>瓶试只能看出会不会分层，看不出会不会烧。抽梢、开花期不要试，分开喷。',qty:'瓶',warnDupSolv:'{c} 有 {n} 种产品同桶：溶剂和乳化剂叠加，嫩梢、幼果、花的药害风险明显上升；两个产品的乳化体系可能互相干扰，其中一个会浮油。瓶试必做，避开正午，能分开喷就分开。',warnDupSusp:'{c} 有 {n} 种产品同桶：颗粒总量翻倍，分散剂互相抢，更容易絮凝、沉降、堵喷头。搅拌要更强，瓶试必做。',warnDupOther:'{c} 有 {n} 种产品同桶：同一剂型也不保证相容，瓶试必做。',warnEmuAdj:'{c} 本身就带乳化剂，已经在铺展和渗透了。再加展着剂或渗透剂，多数情况只是多流失、多进叶片；ME 尤其不要加。先看叶子：喷几下后药液缩成一颗颗圆珠不铺开，叫滚珠，说明覆盖差，这时才按标签最低量加非离子展着剂；药液已经铺成一层水膜，就不要加。抽梢期无论老叶滚不滚珠都不加：嫩叶还没有蜡层，展着剂的作用就是穿过蜡层，没有蜡层它就把药直接推进嫩组织，灼伤和畸形叶就是这么来的。粘着剂可以。',warnSLEmu:'SL 和 {c} 同桶：很多 SL 是盐（胺盐、钾盐），高电解质会像硬水一样破乳，油滴聚成油层。顺序照软件给的——先乳类后 SL——瓶试见油层就分开喷。SL 本身不含油，油的位置已经被 {c} 占了，不要再加油类助剂。',warnMany:'桶里三种以上产品，相容性风险成倍增加。瓶试不能省。',
+ warnOilAct:'{a} 与油类同桶会灼叶；硫磺喷后两周内也不要用油。',
+ warnAlkAct:'{a} 怕碱：不要和石灰、碳酸氢钠、钾腐植酸等碱性产品同桶。',
+ warnCuPhos:'铜制剂与 {a} 同桶会加重铜药害，除非标签明确允许，分开喷。',
+ warnCaptanCu:'克菌丹遇碱性产品分解，铜制剂（氢氧化铜、波尔多液）是碱性的，分开喷。',
+ warnSulHeat:'硫磺在高温（超过 32°C）或强日照下喷会灼叶，清晨喷。',
+ warnMetalChel:'桶里有 {a} 又有叶面肥：螯合类微量元素会把金属从药剂里抢走。',
+ bottle:{title:'这瓶还能用吗？',type:'剂型',store:'存放在',stores:['阴凉室内','热棚 / 铁皮仓库','露天日晒'],age:'放了多久',ages:['不到一年','一到两年','两年以上'],see:'看到什么',sees:['上面一层油','底部软沉淀，摇得散','底部硬块，摇不散','粗砂感，颗粒变大','变稠、结胶','粉末受潮结块','变色或异味','没有异常'],
+  v:{discard:'丢弃',shake:'摇匀再用',jar:'瓶试后再用',ok:'可以用'},
+  r:{cake:'硬块和粗颗粒进喷雾器会堵喷头，药效也差。',gel:'增稠剂已失效，加水也散不开。',damp:'受潮的粉剂、粒剂不再分散，喷出去是块。',colour:'变色或异味说明有效成分已分解。',oil:'用力摇匀。摇后仍有油层就是破乳了，丢弃。',sed:'软沉淀是正常沉降，摇匀即可。',old:'液体剂型在热、久放后可能已经变质，先用一升水做瓶试，散得开再用。',fine:'没有异常，按正常方式使用。'}},
+ calc2:{ww:'% w/w',den:'密度 g/ml（标签有写就填）'},
+ clear:'清空',share:'分享到 WhatsApp',shareTitle:'配药顺序',shareWarn:'注意',shareSteps:'加入顺序',chemlog:'要算每桶用多少毫升、多少克',cost:'弱项：',expiry:'标签有效期',expiryOpts:['未过期','已过期','看不清'],rExpired:'已过标签有效期。没有异常也先用一升水做瓶试，散得开再用。',appTitle:'剂型通',navLib:'剂型',navPick:'选剂型',navMix:'混配顺序',navSci:'原理',
+ libLead:'常见农药剂型：每种如何存放、如何稀释、优点与缺点。点开查看。',
+ fAll:'全部',fLiq:'液体',fSol:'固体',fSpray:'兑水喷雾',fEmu:'乳类',fCap:'微囊类',
+ kState:'有效成分状态',kDilute:'兑水后',kLoad:'常见含量',kAgit:'搅拌需求',kPro:'优点',kCon:'缺点',kStore:'储存',kSafe:'安全',kEx:'常见例子',kUse:'适用',
+ agit:['不需要','偶尔','持续','强力持续'],
+ pickLead:'只比较能兑水喷雾的剂型。勾选你在意的要求，软件按剂型特性打分排序，第一名即为默认建议。',
+ pickPurpose:'这次喷药的目的',purpose:['跳过','预防：病害还没出现（P）','治疗：病害刚出现（C）','根除：病害已经成片（E）'],purposeNote:{1:'预防要靠留在叶面的保护层。S、P、C、E 是有效成分自己的特性，剂型改变不了；剂型只决定你能拿到多少。已勾选「持效保护层」。非内吸药靠覆盖、粘着和时机增效，见「原理」。',2:'治疗要让药进到叶子里，所以只有内吸性（S）的药才能治疗。剂型不能把非内吸药变成内吸药，但溶解态（EC、EW、ME）比固体颗粒进得快。已勾选「快速吸收」。',3:'根除要药渗到已有病斑里，靠内吸（S）加渗透加足量。剂型是杠杆之一，但一种药能不能根除，是分子决定的。已勾选「快速吸收」和「耐雨水冲刷」。'},
+ pickAI:'有效成分是什么类型？（不知道可跳过）',pickPri:'你在意什么？',
+ ai:['不知道 / 跳过','油溶性液体或低熔点固体','不溶于水的固体（高熔点）','可溶于水'],
+ pri:['快速吸收（治疗用）','持效保护层（预防用）','耐雨水冲刷','操作者安全（少溶剂、无粉尘）','高温仓储稳定','作物安全（药害风险低）','量取方便','不需搅拌','喷头磨损小','价格低','马来西亚容易买到'],priNeg:['吸收慢','保护层不持久','不耐雨水冲刷','操作者风险高','高温下不耐放','药害风险高','量取麻烦','需要持续搅拌','喷头磨损大','价格高','不容易买到'],
+ top:'默认建议',why:'优势：',noPri:'先勾选至少一项要求。',
+ mixLead:'勾选桶里要混的剂型，软件给出加入顺序。顺序错了会结块、分层、堵喷头。',
+ mixWhat:'桶里有什么？',mixStage:'树现在的状态',stages:['正常','抽梢中','开花或幼果'],stageNote:{1:'抽梢期：嫩叶蜡层还没长好，油、溶剂、展着剂的灼伤风险最高。',2:'开花或幼果期：花和小果一烧就掉，油类和 EC 在这个阶段不要混，分开喷。'},stageEsc:'<b>现在是{s}——上面这条不是「小心」，是「分开喷」。</b>不要用瓶试赌，等这批梢老化或坐果稳定再混。',droneOil:'<b>无人机不能用这些油：{list}。</b>地面用油靠 300–400 L 水把 0.5–1% 的油铺薄；无人机一英亩只有 10–15 L 水，同样的百分比是 15–30 倍少的油，没有效果；同样的每英亩油量就是 15–30% 的油桶，乳液保不住，落到叶上接近纯油，必烧，还糊泵堵喷头。无人机只用标签写明适用无人机的抗飘移、抗蒸发助剂。',droneCap:'<b>无人机不能用微囊类（{list}）。</b>无人机泵是高压高剪切，会打碎囊壁，缓释变成一次释放，等于花微囊的钱喷普通药。换 SC 或 EW。',droneWP:'<b>无人机不能用 WP。</b>颗粒粗，无人机喷头细，必堵。换 SC 或 WG（装机前确认完全散开）。',droneEC:'无人机桶里的 EC：地面一英亩用 300 L 水，无人机只用 12 L，同样的药量在桶里浓了约 25 倍，溶剂也跟着浓 25 倍。抽梢、开花期不要用；其余时期按标签的无人机用量，没有无人机用量就不要自己换算。',droneNote:'<b>无人机不减药量。</b>每英亩有效成分和地面一样多，少的只是水。变的是载体：EC 换成 SC 或 OD，地面展着剂和油换成飞防助剂，避开抽梢和开花。用量按每英亩算，不是每桶。适合的剂型见「选剂型」或剂型卡的「无人机」一行；详细看「原理」最后一节。',sprayerFrom:'喷雾器',grpPest:'农药',grpAdj:'助剂 · 肥料 · 油',version:'版本',
+ mixNone:'先勾选要混的剂型。',
+ warnCap:'含微囊的产品（CS、ZC、ZW、ZE）怕强剪切：用低压泵，不要长时间回流搅拌，喷完及时清洗。',mixSteps:{cond:'这类助剂先加，搅到完全溶解再加农药。照标签的顺序做',fill:'桶先加一半水，开动搅拌',dry:'先加干粉、粒剂。每种完全分散后再加下一种',flow:'再加水基悬浮类。不要直接倒在干粉团上',emul:'再加油基乳类。溶剂会让先前的悬浮更稳定',sol:'再加水溶性液剂',adj:'最后加助剂、叶面肥、渗透剂',top:'补满水，边补边搅。配好尽快喷完，不要过夜'},
+ mixOther:{cond:'标签写明先加的助剂（卵磷脂、脂肪醇醚类）',adj:'展着剂 / 粘着剂 / 渗透剂',dish:'洗洁精 — 不能用，点看原因',foliar:'叶面肥（钙、镁、螯合微量元素）',oil:'矿物油 / 植物油',humic:'增效剂（黄腐酸 / 腐植酸类）',faa:'发酵液肥（鱼氨基酸、酵素）',neem:'苦楝油（Neem）',orange:'橙油（d-柠檬烯）'},warnNeem:'苦楝油：冷榨苦楝油不会自己乳化——先在桶外用温水加乳化剂调匀，或买配好的苦楝油乳油。印楝素怕阳光和碱性水，傍晚喷，当天用完。用量 0.5–1%，只喷老叶，避开抽梢和开花。',warnOrange:'橙油是溶剂不是油脂：0.1–0.2% 当展着渗透剂很好，超过 0.5% 会洗掉叶面蜡层，嫩梢和花会灼伤，也会腐蚀旧喷雾器的橡胶件。',warnBoth:'<b>苦楝油和橙油不要同桶。</b>橙油是溶剂，会把苦楝油推进叶片，等于两份油加一份溶剂。隔周轮换喷：这周苦楝油对付介壳虫和螨，下周橙油击倒粉蚧和蚜虫。',botPair:{title:'{b}和桶里其他东西的冲突：',oil:'再加矿物油 / 植物油 → 两份油叠加，灼叶风险翻倍。二选一。',spread:'再加展着剂 / 渗透剂 / 洗洁精 → 植物油本身就是展着渗透剂，叠加只会流失和洗掉蜡层。去掉展着剂。',solv:'和 EC / ME / DC 同桶 → 农药自带溶剂和高量表面活性剂，加上植物油，嫩梢和花的药害风险很高。瓶试，减半用量，或分开喷。',od:'和 OD 同桶 → OD 已经是油基，再加油等于两份油。二选一。',cap:'和微囊类（CS、ZC、ZW、ZE）同桶 → 橙油是溶剂，会溶蚀囊壁，缓释变成一次释放。分开喷。',alk:'和碱性增效剂同桶 → 印楝素在碱性水里几小时内分解，等于白加。分开喷。',ca:'和含钙镁的叶面肥同桶 → 钙镁会破乳，油滴聚成油斑，落在叶上就是一个个灼伤点。瓶试，不稳就分开喷。'},warnBot:'苦楝油、橙油：<br>1. 冷榨苦楝油不会自己乳化——先在桶外用温水加乳化剂调匀，或买配好的苦楝油乳油。印楝素怕阳光和碱性水，傍晚喷，当天用完。<br>2. 橙油是溶剂不是油脂：0.1–0.2% 当展着渗透剂很好，超过 0.5% 会洗掉叶面蜡层，嫩梢和花会灼伤，也会腐蚀旧喷雾器的橡胶件。<br>3. 两者都算油：不与硫磺、百菌清、克菌丹同桶；不要再加其他油或展着剂——它们本身就是展着剂，加了只会流失和灼叶；避开正午高温。<br>4. 苦楝油和橙油也不要同桶：橙油是溶剂，会把苦楝油推进叶片，等于两份油加一份溶剂。隔周轮换喷。',warnFAA:'鱼氨基酸、酵素类发酵液肥：<br>1. 先用布过滤——鱼渣、鳞片、糖渣是堵喷头的头号原因。<br>2. 氨基酸会螯合金属，和铜制剂、代森锰锌同桶会削弱药效；它偏酸（pH 约 4），还会加重铜药害。<br>3. 桶里有杀菌剂就会杀死它的活菌，当纯营养用可以，想要活菌效果就分开喷。<br>用量按 1:500–1:1000，配好当天用完。',blockDish:'<b>把洗洁精拿出桶，软件才给配药顺序。</b>没有任何一种情况需要它。',warnDish:'<b>洗洁精不是展着剂。</b>它看起来有效——雾滴不再在叶面滚珠——所以这个习惯一直在；看不到的是两周后的代价。<br>1. 去油配方专门溶解油脂，叶面蜡层就是油脂：嫩梢幼果灼伤，老叶失去自己的防雨层几个星期。<br>2. 瓶里有什么不知道：香精、色素、抗菌剂、增稠盐，pH 从 7 到 10 都有，没有一样和农药测试过，有的会让悬浮剂絮凝。<br>3. 泡沫：半桶泡沫看不到水位，泵抽空气，最后三分之一喷的是空气。<br>4. 用量是猜的：一瓶盖在 16 升里可能是 0.05% 也可能是 0.5%。<br>农用非离子展着剂一桶几令吉，做同样看得见的事，没有看不见的代价。',warnHumic:'黄腐酸、腐植酸类对保护性接触药（代森锰锌、铜、百菌清）没有可靠增效证据；铜制剂可能反而减效。先查产品 pH：钾腐植酸多为碱性（pH 8–10），会分解代森锰锌和部分杀虫剂。一定瓶试。',
+ jar:'混配前一定先做瓶试：按同样比例、同样顺序在透明瓶里配 1 升，静置 15 分钟。看到絮状、结块、油层、沉淀 → 不要混。',
+ warnWPEC:'WP 遇 EC 的溶剂容易絮凝结块，务必瓶试。',warnFoliar:'含钙、镁的叶面肥会让悬浮剂絮凝，硬水也一样。先瓶试，或分开喷。',warnFoliarChel:'螯合微量元素（氨基酸、EDTA 类）会把铜制剂和代森锰锌里的金属抢走，降低药效。桶里有金属类杀菌剂就分开喷。',warnOD:'OD 与水分散粒剂混合时黏度高，要充分搅拌。',
+ calc:{title:'两瓶比一比',packHint:'常见包装',wvHint:'标签写 25% w/v 就选 % w/v；写 w/w 的先用标签上的 g/L。',ta:'产品 A',tb:'产品 B',form:'形态',liq:'液体（g/L）',sol:'固体（%）',load:'含量',pack:'包装',price:'价格 RM',rate:'标签用量',ru:{tank:'每桶',per100:'每 100 L',ratio:'稀释倍数 1 :'},tank:'桶容量 L',ai:'每桶有效成分',measure:'每桶量取',cost:'每桶成本',perG:'每克有效成分',vFill:'填齐两个产品的数字后，结果在这里。用量必须来自标签，软件不给剂量。',vSame:'两个产品剂量相同。{c} 每克有效成分便宜 {p}%，是默认选择。',vDiff:'按标签用量，{a} 每桶比 {b} 多 {p}% 有效成分。两张标签的剂量不同，比价没有意义，先确认哪个剂量是对的。',inert:'{c} 每桶落到树上的制剂多 {p}%，油、溶剂、助剂也跟着多。',vEq:'两个产品剂量相同、每克价格也一样，按储存和量取方便选。'},
+ sciLead:'看懂瓶子里发生什么，就懂为什么要摇、为什么会堵、为什么含量高不等于效果好。',
+ sci:[
+  ['什么是乳液？','<p><b>油和水不相溶。</b>倒一起会分成两层。用力摇，油会碎成小滴散在水里，但一停手，小滴又互相碰撞、合并，几分钟内重新分成两层。</p><p><b>乳液</b>就是让这些油滴留在水里不合并的状态。做到这一点靠<b>乳化剂</b>：一种一头亲水、一头亲油的分子。它们排在每颗油滴表面，亲油的一头插进油里，亲水的一头朝外，油滴之间就被隔开，碰到也合不起来。</p><p>你天天见到的乳液：<b>椰浆</b>（油滴散在水里，蛋白质当乳化剂）、牛奶、沙拉酱。椰浆放久了上面浮一层油，就是乳液在"乳析"，摇一摇又回去。</p><p><b>农药为什么需要乳液？</b>大多数有效成分是油溶性的，根本不溶于水。要让它均匀分散在一桶水里喷出去，只有两条路：把它溶在油里做成乳液（EC、EW、ME），或者把它磨成细粉做成悬浮液（SC、WP、WG）。</p><p><b>两种方向：</b>油滴在水里叫<b>水包油</b>（EW，兑水后能再稀释）；水滴在油里叫<b>油包水</b>（EO，稠、像黄油）。</p><p><b>油滴越细，乳液越稳定，也越透明。</b>粗油滴（几微米）是乳白色，静置会浮油；极细油滴（小于 0.1 微米）几乎透明，不会分层（ME）。</p>'],
+  ['溶液 · 乳液 · 悬浮液：三种兑水后的状态','<div class="three">JAR3</div><p><b>溶液</b>：有效成分溶于水，透明。不会沉淀，也不需搅拌（SL、SP、SG）。</p><p><b>乳液</b>：有效成分溶在油滴里，油滴分散在水中，看起来像牛奶。油滴会往上浮（乳析），所以要摇（EC、EW、ME）。</p><p><b>悬浮液</b>：固体颗粒悬在水里，混浊。颗粒会往下沉，所以要持续搅拌（SC、WP、WG、CS）。</p><p>同一个有效成分，可以做成不同剂型。剂型改变的是<b>进入植物的方式和速度</b>，不是它杀菌杀虫的本领。</p>'],
+  ['乳类家族一览：E 开头和 Z 开头的代码','<table><tr><th>代码</th><th>油在哪里</th><th>一句话</th></tr><tr><td>EC</td><td>溶剂里，兑水才乳化</td><td>经典乳油，溶剂最多</td></tr><tr><td>EW</td><td>已在水中的油滴</td><td>少溶剂的 EC</td></tr><tr><td>EO</td><td>油包着水</td><td>反过来的 EW，抗飘移</td></tr><tr><td>ME</td><td>极细油滴，透明</td><td>不需摇，渗透最快</td></tr><tr><td>SE</td><td>油滴 + 固体颗粒</td><td>SC 和 EW 装一瓶</td></tr><tr><td>EG / EP</td><td>吸在可溶颗粒或粉末上</td><td>没有液体溶剂的 EC</td></tr><tr><td>ES</td><td>同 EW，加染料</td><td>拌种用</td></tr><tr><td>DC</td><td>溶剂与水互溶</td><td>兑水析出细颗粒</td></tr><tr><td>CS</td><td>包在微囊里</td><td>缓释，最安全</td></tr><tr><td>ZC</td><td>微囊 + 固体颗粒</td><td>CS + SC</td></tr><tr><td>ZW</td><td>微囊 + 油滴</td><td>CS + EW</td></tr><tr><td>ZE</td><td>微囊 + 油滴 + 颗粒</td><td>CS + SE，三相</td></tr><tr><td>OL / OF / UL</td><td>油是稀释液</td><td>不加水，烟雾机或超低容量</td></tr></table><p>Z 开头的意思：把速效相和缓释相装进同一瓶。速效相（固体或油滴）负责击倒，微囊负责后面两三周。代价是储存更娇气、价格更高。</p>'],
+  ['表面活性剂：润湿、分散、乳化三个角色','<p>剂型里的"助剂"不是填料，每一种有工作：</p><p><b>润湿剂</b>让粉末和水亲近，粉才能沉下去而不是浮在水面结团。</p><p><b>分散剂</b>包住每一个颗粒，让颗粒互相排斥，不结块。</p><p><b>乳化剂</b>站在油和水的界面上，让油能碎成细滴留在水里。</p><p>硬水里的钙镁离子会"抢走"这些助剂，所以硬水会让乳液破乳、悬浮剂沉淀。</p>'],
+  ['瓶子为什么会坏：五种失效','BOTTLE<table><tr><th>现象</th><th>发生在</th><th>原因</th><th>怎么办</th></tr><tr><td>上面一层油</td><td>EW、ME</td><td>油滴浮起、合并（乳析）</td><td>用力摇匀，摇匀后仍有油层 → 已破乳，丢弃</td></tr><tr><td>底部沉淀，能摇散</td><td>SC、SE、OD</td><td>颗粒下沉（沉降）</td><td>正常，使用前摇匀</td></tr><tr><td>底部硬块，摇不散</td><td>SC、OD</td><td>沉淀压实（硬结块）</td><td>丢弃。硬块进喷雾器会堵喷头</td></tr><tr><td>粗砂感，颗粒变大</td><td>SC</td><td>小颗粒溶解后再长到大颗粒上（晶体生长）</td><td>丢弃。大颗粒效果差又堵喷头</td></tr><tr><td>变稠、变胶</td><td>SC、OD</td><td>高温下增稠剂或分散剂失效</td><td>加水稀释仍不散 → 丢弃</td></tr></table><p>规律：<b>水基液体剂型怕热</b>，干剂型（WP、WG）最耐放。马来西亚仓库常超过 35°C，液体最好一季用完。</p>'],
+  ['沉降快慢：颗粒大小和密度','<p>颗粒越大、越重，沉得越快（斯托克斯定律：沉降速度与颗粒直径的平方成正比）。颗粒直径加倍，沉降快四倍。</p><p>这就是为什么：</p><p>· 优质 SC 研磨到 1–3 微米，几天才见底；便宜的 SC 几小时就分层。</p><p>· WP 颗粒比 SC 粗得多（5–20 微米），所以喷 WP 时搅拌不能停。</p><p>· 增稠剂是让水"变稠"来拖慢沉降，不是让颗粒变轻。</p>'],
+  ['瓶试怎么做','<p>1. 拿透明瓶，装 1 升你要用的水（同一水源）。</p><p>2. 按比例、按加入顺序加每种产品，每加一种摇 10 秒。</p><p>3. 静置 15 分钟。</p><p>4. 合格：均匀混浊或均匀乳白，摇一摇能恢复。</p><p>5. 不合格：絮状物、结块、油层、油珠、块状沉淀、变色发热。</p><p>6. 不合格就分开喷，不要硬混。</p>'],
+  ['含量高 ≠ 效果好：按每英亩有效成分计算','CALC<p>标签上的 250 g/L、430 g/L 是瓶子里的浓度，不是田里的剂量。</p><p>田里的剂量是 <b>每英亩或每桶多少克有效成分</b>。250 g/L 的产品用 1 升，和 430 g/L 的产品用 0.58 升，落到树上的有效成分一样多。</p><p>含量高只影响运费、包装和量取，不影响药效。比较产品要比：<b>相同有效成分剂量下</b>，哪个剂型吸收快、持效长、更安全、更耐放。</p>'],
+  ['水质：硬度、pH、温度','<p><b>硬水</b>（雨水以外的井水、山水常见）：钙镁离子破坏乳化和分散，加水前先用软水剂或选用耐硬水产品。</p><p><b>pH</b>：多数农药在微酸（5.5–6.5）最稳定，碱性水（pH>8）会让部分成分几小时内分解。</p><p><b>温度</b>：热水（>30°C）让乳液更容易破乳，也加速分解。用常温水。</p>'],
+  ['非内吸药怎么用得更好：覆盖、粘着、时机','<p>先纠正一点：内不内吸是<b>有效成分</b>的事，不是剂型。代森锰锌做成 EW 还是保护性接触药。药不会走，所以效果只取决于三件事：落在哪里、留多久、孢子来时它还在不在。</p><p><b>1. 覆盖，最大的杠杆。</b>保护药只保护它碰到的那几平方毫米。叶背、果柄、枝杈漏了，病菌就从那里进。做法：喷到叶面发亮就停，不要喷到流；用空心锥喷头打细雾；树冠两面都喷；走慢一点。榴莲修剪让雾能打进树冠，本身就是保护药的增效手段。</p><p><b>2. 助剂，每种解决一个具体问题：</b></p><table><tr><th>问题</th><th>助剂</th><th>注意</th></tr><tr><td>雾滴在蜡质叶面上滚成珠</td><td>展着剂 / 润湿剂（非离子表面活性剂）</td><td>有机硅"超级展着剂"能铺满整片叶，但也容易直接流掉，还会把药推进气孔——嫩梢幼果容易药害</td></tr><tr><td>雨一冲就没</td><td>粘着剂（乳胶、松烯、树脂类）或展着粘着剂</td><td>粘太牢，露水就带不动药膜再分布</td></tr><tr><td>高温下药膜干得斑斑点点</td><td>保湿剂（甘油类）</td><td>影响小</td></tr><tr><td>硬水、pH 不对</td><td>水质调理剂、酸化剂 / 缓冲剂</td><td>铜和代森锰锌在碱性水里都会失效，先查 pH 再谈别的</td></tr></table><p><b>3. 时机，保护药必须先到。</b>在诱发感染的那场雨之前喷，不是之后。约 25 毫米雨后或两到三周后补喷，哪个先到算哪个。这是最便宜的增效，也是最多人做错的一步。</p><p><b>4. 在保护药里选剂型。</b>颗粒细的 SC 或 WG（1–3 微米）每克盖的面积比粗 WP 大，也更容易随露水再分布；CS 能把间隔拉长。铜和代森锰锌其实靠小雨和露水在叶面上再分布，所以粘着剂用适量，不要用重的。</p><p><b>5. 和内吸药搭配。</b>多作用位点的保护药加单作用位点的内吸药，不只是效果相加：保护药补内吸药漏掉的面，混用又拖慢内吸药的抗性。标准搭配就是这么来的。</p><p><b>助剂做不到的事：</b>把非内吸药变成内吸药。渗透剂能把某些成分推进叶片一点点（跨层），但铜这类真正的接触药加什么都留在表面。要药进到组织里，换分子，不是换助剂。</p>'],
+  ['助剂小词典：软件里这些词是什么意思','<table><tr><th>词</th><th>是什么</th><th>什么时候用</th></tr><tr><td>表面活性剂</td><td>一头亲水一头亲油的分子，所有展着、乳化、分散的基础</td><td>—</td></tr><tr><td>非离子</td><td>头部不带电的表面活性剂（脂肪醇醚、有机硅、聚山梨酯）。不和硬水的钙镁反应，不絮凝悬浮剂，泡沫少，酸碱都能用</td><td>标签说「加展着剂」时指的就是它</td></tr><tr><td>阴离子</td><td>头部带负电（硫酸盐、磺酸盐）。洗洁精、洗衣粉。泡沫多，遇硬水沉淀</td><td>不进农药桶</td></tr><tr><td>展着剂 / 润湿剂</td><td>降低表面张力，让药液在蜡质叶面铺成膜而不是滚珠</td><td>药液滚珠时；抽梢期不加</td></tr><tr><td>渗透剂</td><td>把药推过蜡层进叶片。有机硅「超级展着剂」是最强的一种</td><td>内吸药、治疗喷雾；保护药不需要；嫩叶不用</td></tr><tr><td>粘着剂</td><td>乳胶、松烯、树脂类，把药膜粘在叶面，耐雨</td><td>雨前；铜和代森锰锌用适量，太牢露水带不动再分布</td></tr><tr><td>矿物油 / COC</td><td>石蜡油加乳化剂，最温和的油类助剂，窒息介壳虫和螨</td><td>老叶，0.5–1%；一桶只能有一份油</td></tr><tr><td>MSO 甲酯化植物油</td><td>植物油做成甲酯（和生物柴油同一反应），比生油更稀、更渗透</td><td>除草剂标签常指定；对作物最不温和，嫩叶远离</td></tr><tr><td>苦楝油 / 橙油</td><td>见混配顺序的提醒</td><td>各自单独用，隔周轮换</td></tr><tr><td>水质调理剂</td><td>硫酸铵、酸化剂、缓冲剂，处理硬水和 pH</td><td>标签或水质需要时，先加</td></tr><tr><td>飞防助剂</td><td>抗飘移加抗蒸发，为每英亩 10–15 L 水设计，常含低比例甲酯化油</td><td>无人机专用，按它自己的用量；不能用地面油类代替</td></tr></table>'],
+  ['无人机：药量不变，换载体','<p>地面喷雾一英亩用约 300 L 水，无人机只带 10–15 L。<b>树需要的有效成分一克都没变</b>，变的只是水少了 25 倍——所以同样的药量在桶里浓了 25 倍。</p><p><b>为什么不能减药量：</b>减了就是欠量，防效差，杀菌剂还会筛选出抗性。飞防"省药 20–30%"是少了地面浪费的说法，不是给树少喂的理由；标签没写飞防用量，就按每英亩原量。</p><p><b>「载体」是什么：</b>桶里除了有效成分以外的一切——水、溶剂、乳化剂、表面活性剂、油、助剂。地面喷雾载体几乎全是水；无人机水少了，其他部分就突出出来，这才是灼叶的来源。</p><p><b>换载体，四件事：</b></p><p>1. 换剂型：同一有效成分，换载体不同的类型。EC（溶剂+乳化剂）换 SC（水+分散剂）或 OD（专为低容量设计的轻油）。WP 换 WG 或 SC。</p><p>2. 换助剂：地面展着剂和农场用油全部拿掉，换标签写明飞防用的抗飘移、抗蒸发助剂，按它自己的用量。</p><p>3. 接受无人机的水量：10–15 L 就是它带的量，不要为了"多点水"飞两遍。</p><p>4. 换时机：落到叶上时载体最浓，避开抽梢、开花和正午。</p><p><b>榴莲的例子：</b>地面每英亩喷 400 ml 的 250 EW（100 g 有效成分）在 300 L 水里。错的换法：400 ml 倒进 12 L。对的换法：同样 100 g 有效成分 = 230 ml 的 430 SC，在 12 L 水里加飞防助剂，清晨喷老叶。有效成分没动，动的是载体。</p><p>每英亩换算要按有效成分核对，不是按毫升，用「两瓶比一比」。</p>']
+ ]},
+en:{search:'Search code or name, e.g. EW, suspension',kDrone:'Drone',droneL:['avoid','caution','works','made for it'],droneWhy:{OD:'oil phase carries built-in anti-evaporation and spreading; the drone formulation of choice in China',UL:'purpose-built ULV, neat or oil-diluted',OF:'purpose-built ULV',SC:'fine particles, water-based, no solvent; the most common drone fungicide type; keep agitating',ME:'already dissolved, sub-micron droplets, clear and stable, nothing to block',EW:'already dissolved, fine droplets, nothing to block',SL:'true solution, nothing blocks or settles',EC:'usable, but ground spraying uses about 300 L of water per acre and a drone about 12 L, so the same dose is roughly 25 times as concentrated in the tank; without a drone rate on the label, do not convert one',WG:'only if fully dispersed in a bucket first and the product is fine-milled',WP:'coarse particles abrade pumps and block fine nozzles',CS:'high-pressure drone pumps break capsule walls',ZC:'contains capsules, as CS',ZE:'contains capsules, as CS'},grpNames:{emu:'Emulsions: oil droplets in water',sus:'Suspensions: solid particles in water',cap:'Capsule types: active sealed in capsules',sol:'Solutions: fully dissolved in water',ulv:'Oil-diluted / ULV: no water',dry:'Applied dry: no water'},backTo:'Back to the {c} card',cmp:{btn:'Compare',btnOn:'Selected',pick1:'{a} selected, tap Compare on another type',title:'{a} vs {b}',clear:'Cancel',toPrice:'Compare two bottles by price →',rowDilute:'In the tank',rowAgit:'Agitation',rowDrone:'Drone',rowAvail:'On Malaysian shelves',rowStore:'Storage',rowSafe:'Safety',better:'better',same:'same',note:'●●● best, ○○○ worst. Green cell is the better side of that row. Scores are informed judgement.'},kAvail:'On Malaysian shelves',availL:['almost never','uncommon','available','common'],rare:'uncommon',
+ pickKind:'Product type',kinds:['Fungicide','Insecticide'],
+ purposeI:['Skip','Knockdown: kill on contact','Residual: one spray, lasts longer','Systemic: for sap-sucking pests'],
+ purposeNoteI:{1:'Knockdown needs the active to contact the insect fast; dissolved forms (EC, EW, ME) spread and penetrate quickest. Ticked: fast uptake.',2:'Residual relies on a deposit that stays on the leaf; particle and capsule types last longest. Ticked: long protective deposit.',3:'Sap-suckers (aphids, mealybugs, psyllids) need the active in the plant sap; only a systemic active can do that, the formulation only sets how fast it gets in. Ticked: fast uptake.'},
+ pickSprayer:'Sprayer',sprayers:['Knapsack / battery sprayer','Mist blower / orchard airblast','Drone'],
+ sprayerNote:{2:'A drone carries only 10–15 L of water per acre through very fine nozzles. Ranking is adjusted for drone suitability: made for it OD; works SC, ME, EW, SL; caution EC, WG; excluded WP and capsule types (CS, ZC, ZE). Every type card has a Drone row with the reason.'},
+ scoreNote:'Scores are informed judgement, not measured data.',
+ mixActives:'Actives in the tank (optional, makes the warnings sharper)',
+ mixSteps2:{rinse:'Rinse straight after spraying: tank, hose and nozzle three times, spray the rinse water on trees already sprayed, never into a drain'},
+ oilCarriers:{EC:'EC',ME:'ME',DC:'DC',OD:'OD',EO:'EO',oil:'mineral / vegetable oil'},warnOilStack:'<b>{n} oil or solvent carriers in one tank: {list}. One per tank.</b><br>It is not the oil that burns but three things riding with it: EC solvent dissolves cuticle wax the moment it lands; each product\'s own emulsifier package stacks up and pushes the spray through into the cells; a thicker oil film blocks stomata and the afternoon sun cooks the leaf.<br>Flush, flowers and fruit below golf-ball size go first; hardened leaves tolerate it, which is why the same mix is harmless one week and destroys a flush the next.<br>A jar test shows whether the mix stays mixed, not whether it burns. During flush or flowering do not test it, spray separately.',qty:'products',warnDupSolv:'{n} {c} products in one tank: solvent and emulsifier stack up, so scorch risk on flush, young fruit and flowers rises sharply; the two emulsifier systems can also interfere and one product creams out. Jar test, avoid midday, spray separately if you can.',warnDupSusp:'{n} {c} products in one tank: double the particle load, dispersants compete, so flocculation, settling and blocked nozzles are more likely. Agitate harder and jar test.',warnDupOther:'{n} {c} products in one tank: same type is no guarantee of compatibility. Jar test.',warnEmuAdj:'{c} already carries its own emulsifier, which is a surfactant doing the spreading and penetrating. A spreader or penetrant on top mostly buys run-off and more uptake into the leaf; with ME never. Look at the leaf first: if after a few strokes the spray sits as round droplets instead of spreading into a film, that is beading, coverage is poor, and only then add a non-ionic wetter at the low end of its label rate; if the leaf is already filmed, do not. In flush, no wetter regardless of how the old leaves look: new leaves have no wax layer yet, a wetter\'s job is to get through wax, and with no wax it pushes the product straight into tender tissue, which is where scorch and distorted leaves come from. A sticker is fine.',warnSLEmu:'SL with {c} in one tank: many SLs are salts (amine or potassium salts), and a high electrolyte load breaks an emulsion the same way hard water does, oil gathering into a layer. Keep the order the app gives, emulsion in before SL, and if the jar test shows an oil layer, spray separately. SL itself has no oil; the oil slot is already taken by {c}, so no oil adjuvant.',warnMany:'More than three products in one tank multiplies compatibility risk. Do not skip the jar test.',
+ warnOilAct:'{a} with oil in the same tank scorches leaves; after sulphur, no oil for two weeks either.',
+ warnAlkAct:'{a} is alkali-sensitive: never in a tank with lime, sodium bicarbonate, potassium humate or other alkaline products.',
+ warnCuPhos:'Copper with {a} in one tank increases copper phytotoxicity; spray separately unless the label explicitly allows it.',
+ warnCaptanCu:'Captan breaks down with alkaline products, and copper (hydroxide, Bordeaux) is alkaline. Spray separately.',
+ warnSulHeat:'Sulphur sprayed in heat (above 32°C) or strong sun scorches leaves. Spray early morning.',
+ warnMetalChel:'{a} and a foliar feed in the same tank: chelated micronutrients pull the metal out of the fungicide.',
+ bottle:{title:'Is this bottle still usable?',type:'Type',store:'Stored in',stores:['Cool room','Hot shed / zinc-roof store','Outdoors in sun'],age:'How long',ages:['Under a year','One to two years','Over two years'],see:'What you see',sees:['Oil layer on top','Soft sediment that shakes back in','Hard layer that will not shake up','Gritty, larger particles','Thickened, gel-like','Powder damp and lumpy','Colour change or odour','Nothing unusual'],
+  v:{discard:'Discard',shake:'Shake and use',jar:'Jar test, then use',ok:'Usable'},
+  r:{cake:'Hard cake and coarse particles block nozzles and work poorly.',gel:'The thickener has failed; it will not thin with water.',damp:'Damp powder or granules no longer disperse; they spray as lumps.',colour:'Colour change or odour means the active has decomposed.',oil:'Shake hard. If the oil layer stays, the emulsion is broken: discard.',sed:'Soft sediment is normal settling. Shake before use.',old:'A liquid type stored hot or for long may have degraded. Jar test one litre first; use only if it disperses cleanly.',fine:'Nothing unusual. Use normally.'}},
+ calc2:{ww:'% w/w',den:'Density g/ml (enter if the label gives it)'},
+ clear:'Clear',share:'Share to WhatsApp',shareTitle:'Tank mix order',shareWarn:'Watch out',shareSteps:'Order',chemlog:'To work out ml or g per tank',cost:'Weak on: ',expiry:'Label expiry',expiryOpts:['Not expired','Expired','Unreadable'],rExpired:'Past the label expiry date. Even with nothing unusual, jar test one litre first and use only if it disperses cleanly.',appTitle:'FormuLab',navLib:'Types',navPick:'Choose',navMix:'Mix order',navSci:'Science',
+ libLead:'Common pesticide formulation types: how each is stored, how it dilutes, what it does well and badly. Tap to open.',
+ fAll:'All',fLiq:'Liquid',fSol:'Solid',fSpray:'Water mix',fEmu:'Emulsions',fCap:'Capsules',
+ kState:'Active ingredient',kDilute:'In the tank',kLoad:'Typical loading',kAgit:'Agitation',kPro:'Strengths',kCon:'Weaknesses',kStore:'Storage',kSafe:'Safety',kEx:'Typical actives',kUse:'Suits',
+ agit:['none','occasional','continuous','strong continuous'],
+ pickLead:'Compares only types that go into a water tank. Tick what matters to you; the app scores each type and ranks them. The top result is the default recommendation.',
+ pickPurpose:'What is this spray for?',purpose:['Skip','Prevent: disease not yet present (P)','Treat: disease just appearing (C)','Eradicate: lesions established (E)'],purposeNote:{1:'Prevention relies on a deposit that stays on the leaf. S, P, C, E belong to the active ingredient; no formulation changes them, it only decides how much of each you collect. Ticked: long protective deposit. A protectant is enhanced by coverage, retention and timing; see Science.',2:'Treatment needs the active inside the leaf, so only a systemic (S) active can treat. A formulation cannot make a non-systemic active systemic, but dissolved forms (EC, EW, ME) get in faster than solid particles. Ticked: fast uptake.',3:'Eradication needs a systemic (S) active, penetration into existing lesions, and a full dose. Formulation is one lever, but whether an active can eradicate at all is set by the molecule. Ticked: fast uptake and rainfastness.'},
+ pickAI:'What kind of active ingredient? (skip if unknown)',pickPri:'What matters?',
+ ai:['Unknown / skip','Oil-soluble liquid or low-melting solid','Water-insoluble solid (high melting point)','Water-soluble'],
+ pri:['Fast uptake (curative use)','Long protective deposit (preventive use)','Rainfastness','Operator safety (low solvent, no dust)','Stable in hot storage','Crop safety (low phytotoxicity)','Easy to measure','No agitation needed','Low nozzle wear','Low cost','Easy to find in Malaysia'],priNeg:['slow uptake','short-lived protective deposit','washes off in rain','higher operator risk','poor in hot storage','higher phytotoxicity risk','awkward to measure','needs constant agitation','more nozzle wear','expensive','hard to find here'],
+ top:'Default recommendation',why:'Strong on: ',noPri:'Tick at least one requirement first.',
+ mixLead:'Tick what goes in the tank and the app gives the order. Wrong order means clumps, separation and blocked nozzles.',
+ mixWhat:'What is going in the tank?',mixStage:'State of the tree right now',stages:['Normal','In flush','Flowering or small fruit'],stageNote:{1:'Flush: new leaves have no wax layer yet, so oil, solvent and spreader burn risk is at its highest.',2:'Flowering or small fruit: flowers and small fruit drop the moment they scorch. Do not mix oils or ECs at this stage; spray separately.'},stageEsc:'<b>The tree is {s}: the warning above is not \'be careful\', it is \'spray separately\'.</b> Do not gamble on a jar test; wait until the flush hardens or fruit set is stable before mixing.',droneOil:'<b>These oils cannot go in a drone tank: {list}.</b> Ground oil relies on 300–400 L of water to spread 0.5–1% oil thin; a drone carries 10–15 L per acre, so the same percentage is 15–30 times less oil and does nothing, and the same oil per acre makes a 15–30% oil tank that no emulsifier holds, lands as near-neat oil, burns, and gums pumps and nozzles. Drones use only anti-drift and anti-evaporation adjuvants whose label names drone use.',droneCap:'<b>Capsule types cannot go in a drone ({list}).</b> Drone pumps run at high pressure and shear, break the capsule walls, and slow release becomes one dump; you pay for capsules and spray an ordinary product. Use SC or EW.',droneWP:'<b>WP cannot go in a drone.</b> Coarse particles, fine nozzles, certain blockage. Use SC or WG (confirm it is fully dispersed before loading).',droneEC:'EC in a drone tank: ground spraying uses about 300 L of water per acre, a drone about 12 L, so the same dose is roughly 25 times as concentrated, solvent included. Not during flush or flowering; otherwise use the label\'s drone rate, and if the label has no drone rate, do not convert one yourself.',droneNote:'<b>Do not cut the dose for a drone.</b> Active per acre stays the same as ground spraying; only the water is less. What changes is the carrier: EC to SC or OD, ground spreaders and oils to a drone adjuvant, and keep off flush and flowers. Rates are per acre, not per tank. See Choose or the Drone row on each type card for suitable types; details in the last Science section.',sprayerFrom:'Sprayer',grpPest:'Pesticides',grpAdj:'Adjuvants · feeds · oils',version:'Version',
+ mixNone:'Tick the formulations you want to mix.',
+ warnCap:'Capsule products (CS, ZC, ZW, ZE) dislike hard shearing: use low pump pressure, avoid long bypass recirculation, rinse promptly after spraying.',mixSteps:{cond:'This kind of adjuvant goes in first; agitate until fully dissolved before any pesticide. Follow the label order',fill:'Fill the tank half full with water, start agitation',dry:'Dry products first. Let each disperse fully before the next',flow:'Then water-based suspensions. Never pour onto a floating powder lump',emul:'Then oil-based emulsions. Their solvent stabilises what is already in',sol:'Then water-soluble liquids',adj:'Adjuvants, foliar fertilisers and penetrants last',top:'Top up with water while agitating. Spray the same day, never leave overnight'},
+ mixOther:{cond:'Adjuvant whose label says add first (lecithin, fatty alcohol ethoxylate type)',adj:'Spreader / sticker / penetrant',dish:'Dishwashing liquid — never; tap for why',foliar:'Foliar fertiliser (Ca, Mg, chelated micronutrients)',oil:'Mineral or vegetable oil',humic:'Enhancer (fulvic / humic acid type)',faa:'Fermented liquid feed (fish amino acid, eco-enzyme)',neem:'Neem oil',orange:'Orange oil (d-limonene)'},warnNeem:'Neem oil: cold-pressed neem does not emulsify by itself; pre-mix in a bucket of warm water with an emulsifier before the tank, or buy a formulated neem EC. Azadirachtin breaks down in sunlight and alkaline water: spray late afternoon, finish the tank the same day. Use at 0.5–1%, hardened leaves only, avoid flush and flowering.',warnOrange:'Orange oil is a solvent, not a fat: 0.1–0.2% is a good wetter-penetrant; above about 0.5% it strips leaf wax, burns flush and flowers, and attacks rubber seals in older sprayers.',warnBoth:'<b>Do not put neem and orange oil in the same tank.</b> Orange oil is a solvent and drives the neem into the leaf: two oils plus a solvent. Alternate week by week: neem this week for scale and mites, orange oil next week to knock down mealybug and aphids.',botPair:{title:'{b} clashes with what else is in the tank:',oil:'plus mineral or vegetable oil → two oils stacked, double the scorch risk. Pick one.',spread:'plus spreader / penetrant / dishwashing liquid → the botanical oil already is the spreader-penetrant; stacking only means run-off and stripped wax. Drop the spreader.',solv:'with EC / ME / DC → the pesticide already carries solvent and heavy surfactant; add botanical oil and flush and flowers are at high risk. Jar test, halve the rate, or spray separately.',od:'with OD → OD is already oil-based, adding oil makes two oils. Pick one.',cap:'with capsule types (CS, ZC, ZW, ZE) → orange oil is a solvent and dissolves capsule walls, turning slow release into one dump. Spray separately.',alk:'with an alkaline enhancer → azadirachtin breaks down in alkaline water within hours, so it is wasted. Spray separately.',ca:'with a Ca/Mg foliar feed → calcium and magnesium break the emulsion, oil gathers into blobs, and each blob on a leaf is a scorch spot. Jar test; if it separates, spray separately.'},warnBot:'Neem oil and orange oil:<br>1. Cold-pressed neem does not emulsify by itself: pre-mix it in a bucket of warm water with an emulsifier before the tank, or buy a formulated neem EC. Azadirachtin breaks down in sunlight and alkaline water: spray late afternoon, finish the tank the same day.<br>2. Orange oil is a solvent, not a fat: 0.1–0.2% is a good wetter-penetrant, above about 0.5% it strips leaf wax, burns flush and flowers, and attacks rubber seals in older sprayers.<br>3. Both count as oil: not with sulphur, chlorothalonil or captan; add no other oil or spreader on top, they are the spreader and more only means run-off and scorch; avoid midday heat.<br>4. Do not put neem and orange oil in the same tank either: orange oil is a solvent and drives the neem into the leaf, two oils plus a solvent. Alternate them week by week.',warnFAA:'Fish amino acid and eco-enzyme ferments:<br>1. Strain through cloth first: fish solids, scale and sugar residue are the number-one nozzle blocker.<br>2. Amino acids chelate metals; in a tank with copper or mancozeb they weaken the fungicide, and the ferment is acidic (about pH 4), which also increases copper phytotoxicity.<br>3. Any fungicide in the tank kills its live microbes; fine as pure nutrition, spray separately if you want the microbial effect.<br>Use at 1:500 to 1:1000 and finish the tank the same day.',blockDish:'<b>Take the dishwashing liquid out of the tank and the mix order will appear.</b> There is no situation that needs it.',warnDish:'<b>Dishwashing liquid is not a spreader.</b> It looks like it works, the droplets stop beading on the leaf, which is why the habit persists; what you do not see is the cost two weeks later.<br>1. Degreasers dissolve fat, and leaf cuticle is wax: flush and young fruit scorch, and mature leaves lose their own rain barrier for weeks.<br>2. Unknown contents: fragrance, dye, antibacterial agents, thickening salt, pH anywhere from 7 to 10; none tested with pesticides, some flocculate SCs.<br>3. Foam: half a tank of suds hides the water level, the pump cavitates, the last third sprays air.<br>4. The dose is a guess: a capful in 16 L could be 0.05% or 0.5%.<br>An agricultural non-ionic spreader costs a few ringgit a tank and does the same visible job without the invisible cost.',warnHumic:'Fulvic and humic products have no reliable evidence of enhancing contact protectants (mancozeb, copper, chlorothalonil); with copper they can reduce activity. Check the product pH first: potassium humates are usually alkaline (pH 8–10) and break down mancozeb and some insecticides. Always jar test.',
+ jar:'Always jar-test first: same water, same ratio, same order, 1 litre in a clear bottle, stand 15 minutes. Flocs, lumps, oil layer or sediment → do not mix.',
+ warnWPEC:'WP tends to flocculate when EC solvent is added. Jar test is essential.',warnFoliar:'Calcium and magnesium foliar feeds can flocculate suspensions; hard water does the same. Jar test or spray separately.',warnFoliarChel:'Chelated micronutrients (amino-acid or EDTA types) pull the metal out of copper fungicides and mancozeb and weaken them. If a metal fungicide is in the tank, spray separately.',warnOD:'OD mixed with water-dispersible granules gets viscous. Agitate well.',
+ calc:{title:'Compare two bottles',packHint:'Common packs',wvHint:'If the label says 25% w/v choose % w/v; for w/w labels use the g/L figure printed beside it.',ta:'Product A',tb:'Product B',form:'Form',liq:'Liquid (g/L)',sol:'Solid (%)',load:'Loading',pack:'Pack',price:'Price RM',rate:'Label rate',ru:{tank:'per tank',per100:'per 100 L',ratio:'dilution 1 :'},tank:'Tank size L',ai:'Active per tank',measure:'Measure per tank',cost:'Cost per tank',perG:'Per gram of active',vFill:'Fill in both products and the result appears here. Rates must come from the labels; the app never suggests a dose.',vSame:'Same dose. {c} costs {p}% less per gram of active and is the default choice.',vDiff:'At label rates {a} delivers {p}% more active per tank than {b}. The labels are not the same dose, so comparing price is meaningless until you know which dose is right.',inert:'{c} puts {p}% more formulation on the tree per tank, so more oil, solvent and surfactant with it.',vEq:'Same dose and same price per gram. Choose on storage and ease of measuring.'},
+ sciLead:'Understand what happens in the bottle and you understand why you shake, why nozzles block, and why higher loading is not better efficacy.',
+ sci:[
+  ['What is an emulsion?','<p><b>Oil and water do not mix.</b> Pour them together and they separate into two layers. Shake hard and the oil breaks into small droplets in the water, but the moment you stop, the droplets collide, merge, and within minutes there are two layers again.</p><p>An <b>emulsion</b> is the state where those oil droplets stay in the water and do not merge. What makes that possible is an <b>emulsifier</b>: a molecule with a water-loving head and an oil-loving tail. Emulsifiers line up on the surface of every droplet, tail in the oil, head facing out, so droplets are kept apart and cannot fuse when they touch.</p><p>Emulsions you already know: <b>santan</b> (oil droplets in water, held by coconut protein), milk, mayonnaise. The oil layer that floats on santan left standing is the emulsion creaming; a shake puts it back.</p><p><b>Why pesticides need emulsions:</b> most actives are oil-soluble and will not dissolve in water at all. To spread one evenly through a tank of water there are only two routes: dissolve it in oil and emulsify (EC, EW, ME), or mill it to fine powder and suspend it (SC, WP, WG).</p><p><b>Two directions:</b> oil droplets in water is <b>oil-in-water</b> (EW; dilutes further with water). Water droplets in oil is <b>water-in-oil</b> (EO; thick, like butter).</p><p><b>Finer droplets mean a more stable and more transparent emulsion.</b> Coarse droplets of a few microns look milky and cream on standing; ultra-fine droplets under 0.1 µm are almost clear and never separate (ME).</p>'],
+  ['Solution, emulsion, suspension: three things water can hold','<div class="three">JAR3</div><p><b>Solution</b>: the active dissolves in water. Clear. Nothing settles, no agitation needed (SL, SP, SG).</p><p><b>Emulsion</b>: the active is dissolved in oil droplets, and the droplets float in water. Looks like milk. Droplets rise (creaming), so you shake (EC, EW, ME).</p><p><b>Suspension</b>: solid particles hang in water. Cloudy. Particles sink, so you keep agitating (SC, WP, WG, CS).</p><p>The same active can be made into different types. The type changes <b>how and how fast it enters the plant</b>, not its ability to kill the pest.</p>'],
+  ['The emulsion family at a glance: E codes and Z codes','<table><tr><th>Code</th><th>Where the oil is</th><th>In one line</th></tr><tr><td>EC</td><td>In solvent; emulsifies only on dilution</td><td>Classic, most solvent</td></tr><tr><td>EW</td><td>Oil droplets already in water</td><td>EC with less solvent</td></tr><tr><td>EO</td><td>Oil wraps the water</td><td>EW inside-out, anti-drift</td></tr><tr><td>ME</td><td>Ultra-fine droplets, clear</td><td>No shaking, fastest penetration</td></tr><tr><td>SE</td><td>Oil droplets plus solid particles</td><td>SC and EW in one bottle</td></tr><tr><td>EG / EP</td><td>Held on soluble granule or powder</td><td>EC without liquid solvent</td></tr><tr><td>ES</td><td>As EW, with dye</td><td>Seed dressing</td></tr><tr><td>DC</td><td>Solvent mixes with water</td><td>Fine particles form on dilution</td></tr><tr><td>CS</td><td>Sealed in capsules</td><td>Slow release, safest</td></tr><tr><td>ZC</td><td>Capsules plus solid particles</td><td>CS + SC</td></tr><tr><td>ZW</td><td>Capsules plus oil droplets</td><td>CS + EW</td></tr><tr><td>ZE</td><td>Capsules, droplets and particles</td><td>CS + SE, three phases</td></tr><tr><td>OL / OF / UL</td><td>Oil is the diluent</td><td>No water: foggers or ULV</td></tr></table><p>What Z means: a fast phase and a slow phase in one bottle. The fast phase (solid or oil droplet) knocks down; the capsules cover the following two or three weeks. The price is fragile storage and a higher cost.</p>'],
+  ['Surfactants: wetter, dispersant, emulsifier','<p>The "inerts" are not filler. Each has a job:</p><p><b>Wetter</b> makes powder and water friendly, so powder sinks instead of floating in a crust.</p><p><b>Dispersant</b> coats every particle so particles repel each other and do not clump.</p><p><b>Emulsifier</b> sits on the oil-water boundary so oil can break into fine droplets and stay in the water.</p><p>Calcium and magnesium in hard water steal these surfactants, which is why hard water breaks emulsions and settles suspensions.</p>'],
+  ['Why the bottle fails: five failure modes','BOTTLE<table><tr><th>What you see</th><th>Types</th><th>Cause</th><th>Action</th></tr><tr><td>Oil layer on top</td><td>EW, ME</td><td>Droplets rise and merge (creaming, coalescence)</td><td>Shake hard. If the layer stays → emulsion broken, discard</td></tr><tr><td>Sediment that shakes back in</td><td>SC, SE, OD</td><td>Particles sinking (sedimentation)</td><td>Normal. Shake before use</td></tr><tr><td>Hard layer that will not shake up</td><td>SC, OD</td><td>Compacted sediment (caking)</td><td>Discard. It blocks nozzles</td></tr><tr><td>Gritty, larger particles</td><td>SC</td><td>Small particles dissolve and regrow onto big ones (crystal growth)</td><td>Discard. Big particles work worse and block nozzles</td></tr><tr><td>Thickened, gel-like</td><td>SC, OD</td><td>Thickener or dispersant failed in heat</td><td>If it will not thin with water → discard</td></tr></table><p>Pattern: <b>water-based liquids hate heat</b>; dry types (WP, WG) keep best. Malaysian sheds often exceed 35°C, so use liquids within a season.</p>'],
+  ['How fast things settle: size and density','<p>Bigger, heavier particles sink faster. Stokes\' law: settling speed rises with the square of particle diameter. Double the diameter, four times the speed.</p><p>So:</p><p>· A good SC is milled to 1–3 µm and takes days to settle; a cheap one separates in hours.</p><p>· WP particles are much coarser (5–20 µm), which is why agitation must never stop when spraying WP.</p><p>· Thickeners slow settling by making the water "thicker", not by making particles lighter.</p>'],
+  ['How to jar test','<p>1. Clear bottle, 1 litre of the water you will actually use.</p><p>2. Add each product at the field ratio, in the tank order, shaking 10 seconds after each.</p><p>3. Stand 15 minutes.</p><p>4. Pass: evenly cloudy or evenly milky, and shakes back uniform.</p><p>5. Fail: flocs, lumps, oil layer, oil beads, caked sediment, colour change or heat.</p><p>6. On fail, spray separately. Do not force the mix.</p>'],
+  ['Higher loading is not higher efficacy: think in g a.i./acre','CALC<p>250 g/L or 430 g/L on the label is the concentration in the bottle, not the dose in the field.</p><p>The field dose is <b>grams of active per acre or per tank</b>. One litre of a 250 g/L product and 0.58 litre of a 430 g/L product put the same amount on the tree.</p><p>Loading changes freight, packaging and measuring. It does not change efficacy. Compare products <b>at equal active dose</b>: which type takes up faster, protects longer, is safer, keeps better.</p>'],
+  ['Water quality: hardness, pH, temperature','<p><b>Hard water</b> (common from wells and hill streams): calcium and magnesium break emulsions and dispersions. Use a water conditioner or a hard-water-tolerant product.</p><p><b>pH</b>: most actives are most stable slightly acid (5.5–6.5); alkaline water (pH above 8) breaks some down within hours.</p><p><b>Temperature</b>: warm water (above 30°C) breaks emulsions more easily and speeds decomposition. Use water at ambient temperature.</p>'],
+  ['Getting more from a protectant: coverage, retention, timing','<p>One correction first: systemic or not is a property of the <b>active</b>, not the formulation. Mancozeb as an EW is still a contact protectant. The active cannot move, so efficacy comes down to three things: where it lands, how long it stays, and whether it is still alive when the spore arrives.</p><p><b>1. Coverage, the biggest lever.</b> A protectant only protects the square millimetres it touches. Miss the leaf underside, the fruit stalk, the crotch, and the fungus walks in there. Practice: spray to glisten, not to run-off; hollow-cone nozzles for a finer droplet; both sides of the canopy; walk slower. Pruning durian for spray penetration is a protectant enhancer in its own right.</p><p><b>2. Adjuvants, each solving one specific failure:</b></p><table><tr><th>Problem</th><th>Adjuvant</th><th>Caution</th></tr><tr><td>Droplets bead up on waxy leaf</td><td>Spreader / wetter (non-ionic surfactant)</td><td>Organosilicone super-spreaders give total coverage but can run straight off and push the active into stomata; phytotoxic on flush and young fruit</td></tr><tr><td>Rain washes it off</td><td>Sticker (latex, pinolene, resin) or spreader-sticker</td><td>Too much sticker stops the deposit re-wetting and redistributing</td></tr><tr><td>Deposit dries patchy in heat</td><td>Humectant (glycerol type)</td><td>Minor</td></tr><tr><td>Hard water, wrong pH</td><td>Water conditioner, acidifier / buffer</td><td>Copper and mancozeb both lose activity in alkaline water; check pH before anything else</td></tr></table><p><b>3. Timing: a protectant must be there first.</b> Spray ahead of the rain that triggers infection, not after. Re-apply after about 25 mm of rain or two to three weeks, whichever comes first. The cheapest enhancement and the one most often done wrong.</p><p><b>4. Choose within the protectant family.</b> Finer particles, a good SC or WG at 1–3 µm, cover more surface per gram than a coarse WP and redistribute better with dew; CS stretches the interval. Copper and mancozeb actually rely on light rain and dew to redistribute across the leaf, so use a moderate sticker, not a heavy one.</p><p><b>5. Pair it with a systemic.</b> A multi-site protectant with a single-site systemic is not just additive: the protectant covers what the systemic misses, and the mixture slows resistance to the systemic. That is why it is the standard pairing.</p><p><b>What adjuvants cannot do:</b> make a non-systemic active systemic. A penetrant can push some actives a little way into the leaf (translaminar), but a true contact protectant like copper stays on the surface whatever you add. If you need the chemical inside the tissue, you need a different molecule, not a better adjuvant.</p>'],
+  ['Adjuvant glossary: what these words in the app mean','<table><tr><th>Term</th><th>What it is</th><th>When</th></tr><tr><td>Surfactant</td><td>A molecule with a water-loving head and oil-loving tail; the basis of all spreading, emulsifying and dispersing</td><td>—</td></tr><tr><td>Non-ionic</td><td>A surfactant whose head carries no charge (alcohol ethoxylates, organosilicones, polysorbates). Does not react with hard-water calcium and magnesium, does not flocculate suspensions, low foam, works at any pH</td><td>What a label means by \'add a wetter\'</td></tr><tr><td>Anionic</td><td>Negatively charged head (sulphates, sulphonates). Dishwashing liquid, laundry detergent. Heavy foam, precipitates in hard water</td><td>Never in a spray tank</td></tr><tr><td>Spreader / wetter</td><td>Lowers surface tension so spray films over waxy leaf instead of beading</td><td>When the spray beads; never in flush</td></tr><tr><td>Penetrant</td><td>Pushes the active through wax into the leaf. Organosilicone \'super-spreaders\' are the strongest kind</td><td>Systemics and curative sprays; protectants do not need it; not on young leaves</td></tr><tr><td>Sticker</td><td>Latex, pinolene, resin; glues the deposit to the leaf against rain</td><td>Before rain; moderate with copper and mancozeb so dew can still redistribute them</td></tr><tr><td>Mineral oil / COC</td><td>Paraffinic oil plus emulsifier; the mildest oil adjuvant; smothers scale and mites</td><td>Hardened leaves, 0.5–1%; one oil per tank</td></tr><tr><td>MSO, methylated seed oil</td><td>Vegetable oil converted to methyl esters (the biodiesel reaction); thinner and more penetrating than raw oil</td><td>Often named on herbicide labels; the least gentle oil on a crop, keep off flush</td></tr><tr><td>Neem / orange oil</td><td>See the mix-order warnings</td><td>Each on its own, alternated week by week</td></tr><tr><td>Water conditioner</td><td>Ammonium sulphate, acidifier, buffer; handles hard water and pH</td><td>When the label or the water calls for it, added first</td></tr><tr><td>Drone adjuvant</td><td>Anti-drift plus anti-evaporation, designed for 10–15 L of water per acre, often with a low share of methylated oil</td><td>Drones only, at its own rate; ground oils are not a substitute</td></tr></table>'],
+  ['Drones: same dose, different carrier','<p>Ground spraying uses about 300 L of water per acre; a drone carries 10–15 L. <b>The tree needs exactly the same grams of active</b>; only the water is 25 times less, which is why the same dose is 25 times as concentrated in the tank.</p><p><b>Why the dose must not be cut:</b> less active is under-dosing, weaker control, and for fungicides a resistance selection pressure. The \'drones save 20–30% product\' claim is about less overspray on the ground, not a licence to feed the tree less; if the label has no drone rate, use the full per-acre rate.</p><p><b>What the carrier is:</b> everything in the tank except the active: water, solvent, emulsifier, surfactant, oil, adjuvant. On the ground the carrier is almost all water; take the water away and the rest stands out, and that is where drone scorch comes from.</p><p><b>Changing the carrier, four things:</b></p><p>1. Change the formulation type: same active, different carrier package. EC (solvent plus emulsifier) to SC (water plus dispersant) or OD (a light oil designed for low volume). WP to WG or SC.</p><p>2. Change the adjuvant: ground spreaders and farm oils out; a drone-labelled anti-drift, anti-evaporation product in, at its own rate.</p><p>3. Accept the drone\'s water: 10–15 L is what it carries; do not fly twice to \'add water\'.</p><p>4. Change the timing: the carrier is most concentrated as it lands, so keep off flush, flowers and midday.</p><p><b>A durian example:</b> ground spraying puts 400 ml of a 250 EW (100 g active) per acre in 300 L. Wrong conversion: 400 ml into 12 L. Right conversion: the same 100 g active = 230 ml of a 430 SC, in 12 L with a drone adjuvant, early morning on hardened leaves. The active never moved; the vehicle did.</p><p>Check any per-acre conversion by active, not by ml, in Compare two bottles.</p>']
+ ]},
+ms:{search:'Cari kod atau nama, cth. EW, ampaian',kDrone:'Dron',droneL:['elak','berhati-hati','boleh','dibuat untuknya'],droneWhy:{OD:'fasa minyak membawa anti-sejat dan penyebaran terbina; formulasi dron pilihan di China',UL:'ULV khas, pekat atau dicairkan minyak',OF:'ULV khas',SC:'zarah halus, berasaskan air, tiada pelarut; jenis racun kulat dron paling biasa; terus kacau',ME:'sudah larut, titisan sub-mikron, jernih dan stabil, tiada yang tersumbat',EW:'sudah larut, titisan halus, tiada yang tersumbat',SL:'larutan sebenar, tiada yang tersumbat atau mendap',EC:'boleh guna, tetapi semburan darat guna kira-kira 300 L air seekar dan dron kira-kira 12 L, jadi dos yang sama kira-kira 25 kali lebih pekat dalam tangki; tanpa kadar dron pada label, jangan tukar sendiri',WG:'hanya jika sebar sepenuhnya dalam baldi dahulu dan produk dikisar halus',WP:'zarah kasar menghauskan pam dan menyumbat muncung halus',CS:'pam dron tekanan tinggi memecahkan dinding kapsul',ZC:'mengandungi kapsul, seperti CS',ZE:'mengandungi kapsul, seperti CS'},grpNames:{emu:'Emulsi: titisan minyak dalam air',sus:'Ampaian: zarah pepejal dalam air',cap:'Jenis kapsul: bahan aktif dalam kapsul',sol:'Larutan: larut sepenuhnya dalam air',ulv:'Cairan minyak / ULV: tanpa air',dry:'Ditabur kering: tanpa air'},backTo:'Kembali ke kad {c}',cmp:{btn:'Banding',btnOn:'Dipilih',pick1:'{a} dipilih, tekan Banding pada jenis lain',title:'{a} lawan {b}',clear:'Batal',toPrice:'Banding harga dua botol →',rowDilute:'Dalam tangki',rowAgit:'Kacauan',rowDrone:'Dron',rowAvail:'Di rak Malaysia',rowStore:'Simpanan',rowSafe:'Keselamatan',better:'lebih baik',same:'sama',note:'●●● terbaik, ○○○ terburuk. Petak hijau ialah pihak lebih baik dalam baris itu. Markah ialah pertimbangan pengalaman.'},kAvail:'Di rak Malaysia',availL:['hampir tiada','jarang','ada','biasa'],rare:'jarang',
+ pickKind:'Jenis produk',kinds:['Racun kulat','Racun serangga'],
+ purposeI:['Langkau','Tumbang: bunuh ketika sentuh','Kesan lama: satu semburan, tahan lebih lama','Sistemik: untuk perosak penghisap sap'],
+ purposeNoteI:{1:'Tumbang perlu bahan aktif sentuh serangga dengan cepat; bentuk terlarut (EC, EW, ME) sebar dan tembus paling cepat. Ditanda: serapan cepat.',2:'Kesan lama bergantung pada lapisan yang kekal di daun; jenis zarah dan kapsul tahan paling lama. Ditanda: lapisan perlindungan tahan lama.',3:'Penghisap sap (afid, koya, psilid) perlu bahan aktif dalam sap tumbuhan; hanya bahan aktif sistemik boleh, formulasi hanya menentukan berapa cepat ia masuk. Ditanda: serapan cepat.'},
+ pickSprayer:'Penyembur',sprayers:['Galas / penyembur bateri','Mesin kabus / tiupan udara dusun','Dron'],
+ sprayerNote:{2:'Dron membawa hanya 10–15 L air seekar melalui muncung sangat halus. Susunan diselaraskan untuk kesesuaian dron: dibuat untuknya OD; boleh SC, ME, EW, SL; berhati-hati EC, WG; dikecualikan WP dan jenis kapsul (CS, ZC, ZE). Setiap kad jenis ada baris Dron dengan sebabnya.'},
+ scoreNote:'Markah ialah pertimbangan berdasarkan pengalaman, bukan data ukuran.',
+ mixActives:'Bahan aktif dalam tangki (pilihan, menjadikan amaran lebih tepat)',
+ mixSteps2:{rinse:'Bilas sebaik selesai sembur: tangki, hos dan muncung tiga kali, sembur air bilasan pada pokok yang sudah disembur, jangan ke longkang'},
+ oilCarriers:{EC:'EC',ME:'ME',DC:'DC',OD:'OD',EO:'EO',oil:'minyak mineral / sayuran'},warnOilStack:'<b>{n} pembawa minyak atau pelarut dalam satu tangki: {list}. Satu setangki.</b><br>Bukan minyak yang melecur tetapi tiga perkara yang datang bersamanya: pelarut EC melarutkan lilin kutikel sebaik mendarat; pakej pengemulsi setiap produk bertindan dan menolak semburan masuk ke dalam sel; lapisan minyak lebih tebal menyumbat stoma dan matahari petang memasak daun.<br>Pucuk, bunga dan buah bawah saiz bola golf terkena dahulu; daun keras tahan, sebab itu campuran sama tidak apa-apa minggu lepas dan memusnahkan pucuk minggu ini.<br>Ujian botol menunjukkan sama ada campuran kekal bercampur, bukan sama ada ia melecur. Semasa pucuk atau berbunga jangan cuba, sembur berasingan.',qty:'produk',warnDupSolv:'{n} produk {c} dalam satu tangki: pelarut dan pengemulsi bertindan, risiko lecur pada pucuk, buah muda dan bunga naik mendadak; dua sistem pengemulsi juga boleh bertembung dan satu produk terapung. Ujian botol, elak tengah hari, sembur berasingan jika boleh.',warnDupSusp:'{n} produk {c} dalam satu tangki: beban zarah berganda, penyebar bersaing, jadi penggumpalan, pemendapan dan muncung tersumbat lebih mungkin. Kacau lebih kuat dan ujian botol.',warnDupOther:'{n} produk {c} dalam satu tangki: jenis sama bukan jaminan keserasian. Ujian botol.',warnEmuAdj:'{c} sudah membawa pengemulsinya sendiri, iaitu surfaktan yang menyebarkan dan menembus. Penyebar atau penembus tambahan kebanyakannya hanya membawa aliran dan lebih serapan ke dalam daun; dengan ME jangan sekali-kali. Lihat daun dahulu: jika selepas beberapa semburan cecair duduk sebagai titisan bulat dan tidak menyebar menjadi lapisan, itu manik, liputan lemah, dan hanya ketika itu tambah pembasah bukan ionik pada kadar label terendah; jika daun sudah berlapisan, jangan. Semasa berpucuk, tiada pembasah walau bagaimana rupa daun tua: daun muda belum ada lapisan lilin, tugas pembasah ialah menembusi lilin, dan tanpa lilin ia menolak produk terus ke tisu lembut, dari situlah lecur dan daun cacat datang. Pelekat tidak mengapa.',warnSLEmu:'SL bersama {c} dalam satu tangki: banyak SL ialah garam (garam amina atau kalium), dan beban elektrolit tinggi memecahkan emulsi seperti air keras, minyak berkumpul menjadi lapisan. Ikut urutan yang diberi, emulsi masuk sebelum SL, dan jika ujian botol menunjukkan lapisan minyak, sembur berasingan. SL sendiri tiada minyak; slot minyak sudah diambil oleh {c}, jadi tiada adjuvan minyak.',warnMany:'Lebih tiga produk dalam satu tangki menggandakan risiko keserasian. Jangan langkau ujian botol.',
+ warnOilAct:'{a} bersama minyak dalam tangki sama melecurkan daun; selepas sulfur, tiada minyak selama dua minggu juga.',
+ warnAlkAct:'{a} sensitif alkali: jangan sekali-kali satu tangki dengan kapur, natrium bikarbonat, humat kalium atau produk beralkali lain.',
+ warnCuPhos:'Kuprum bersama {a} dalam satu tangki meningkatkan fitotoksik kuprum; sembur berasingan melainkan label membenarkan dengan jelas.',
+ warnCaptanCu:'Kaptan terurai dengan produk beralkali, dan kuprum (hidroksida, Bordeaux) beralkali. Sembur berasingan.',
+ warnSulHeat:'Sulfur disembur ketika panas (melebihi 32°C) atau matahari terik melecurkan daun. Sembur awal pagi.',
+ warnMetalChel:'{a} dan baja foliar dalam tangki sama: mikronutrien kelat menarik logam keluar daripada racun kulat.',
+ bottle:{title:'Botol ini masih boleh guna?',type:'Jenis',store:'Disimpan di',stores:['Bilik sejuk','Bangsal panas / stor bumbung zink','Luar, terdedah matahari'],age:'Berapa lama',ages:['Kurang setahun','Satu hingga dua tahun','Lebih dua tahun'],see:'Apa yang dilihat',sees:['Lapisan minyak di atas','Mendapan lembut yang boleh digoncang semula','Lapisan keras tak boleh digoncang','Berpasir, zarah membesar','Pekat seperti gel','Serbuk lembap dan berketul','Tukar warna atau bau','Tiada yang luar biasa'],
+  v:{discard:'Buang',shake:'Goncang dan guna',jar:'Ujian botol, kemudian guna',ok:'Boleh guna'},
+  r:{cake:'Ketulan keras dan zarah kasar menyumbat muncung dan kurang berkesan.',gel:'Pemekat telah gagal; ia tak akan cair dengan air.',damp:'Serbuk atau butiran lembap tidak lagi sebar; ia disembur sebagai ketulan.',colour:'Tukar warna atau bau bermakna bahan aktif telah terurai.',oil:'Goncang kuat. Jika lapisan minyak kekal, emulsi pecah: buang.',sed:'Mendapan lembut ialah pemendapan normal. Goncang sebelum guna.',old:'Jenis cecair yang disimpan panas atau lama mungkin telah rosak. Ujian botol satu liter dahulu; guna hanya jika sebar dengan bersih.',fine:'Tiada yang luar biasa. Guna seperti biasa.'}},
+ calc2:{ww:'% w/w',den:'Ketumpatan g/ml (isi jika label ada)'},
+ clear:'Kosongkan',share:'Kongsi ke WhatsApp',shareTitle:'Urutan campuran tangki',shareWarn:'Perhatian',shareSteps:'Urutan',chemlog:'Untuk kira ml atau g setangki',cost:'Lemah pada: ',expiry:'Tarikh luput label',expiryOpts:['Belum luput','Sudah luput','Tak boleh dibaca'],rExpired:'Sudah melepasi tarikh luput label. Walaupun tiada yang luar biasa, ujian botol satu liter dahulu dan guna hanya jika sebar dengan bersih.',appTitle:'FormuLab',navLib:'Jenis',navPick:'Pilih',navMix:'Urutan campur',navSci:'Prinsip',
+ libLead:'Jenis formulasi racun perosak yang biasa: cara simpan, cara cair dalam tangki, kelebihan dan kelemahan. Tekan untuk buka.',
+ fAll:'Semua',fLiq:'Cecair',fSol:'Pepejal',fSpray:'Tangki air',fEmu:'Emulsi',fCap:'Kapsul',
+ kState:'Bahan aktif',kDilute:'Dalam tangki',kLoad:'Kandungan biasa',kAgit:'Kacauan',kPro:'Kelebihan',kCon:'Kelemahan',kStore:'Simpanan',kSafe:'Keselamatan',kEx:'Contoh bahan aktif',kUse:'Sesuai untuk',
+ agit:['tidak perlu','sekali-sekala','berterusan','kuat berterusan'],
+ pickLead:'Hanya membandingkan jenis yang masuk tangki air. Tanda apa yang penting bagi anda; aplikasi memberi markah setiap jenis dan menyusunnya. Yang teratas ialah cadangan lalai.',
+ pickPurpose:'Semburan ini untuk apa?',purpose:['Langkau','Cegah: penyakit belum ada (P)','Rawat: penyakit baru muncul (C)','Hapus: lesi sudah meluas (E)'],purposeNote:{1:'Pencegahan bergantung pada lapisan yang kekal di daun. S, P, C, E milik bahan aktif; formulasi tidak mengubahnya, hanya menentukan berapa banyak anda dapat. Ditanda: lapisan perlindungan tahan lama. Pelindung ditingkatkan melalui liputan, lekatan dan masa; lihat Prinsip.',2:'Rawatan perlu bahan aktif masuk ke dalam daun, jadi hanya bahan aktif sistemik (S) boleh merawat. Formulasi tak boleh menjadikan bahan bukan sistemik menjadi sistemik, tetapi bentuk terlarut (EC, EW, ME) masuk lebih cepat daripada zarah pepejal. Ditanda: serapan cepat.',3:'Penghapusan perlu bahan aktif sistemik (S), penembusan ke lesi sedia ada, serta dos penuh. Formulasi satu tuil, tetapi sama ada bahan aktif boleh menghapus ditentukan oleh molekul. Ditanda: serapan cepat dan tahan hujan.'},
+ pickAI:'Apakah jenis bahan aktif? (langkau jika tidak tahu)',pickPri:'Apa yang penting?',
+ ai:['Tidak tahu / langkau','Cecair larut minyak atau pepejal takat lebur rendah','Pepejal tidak larut air (takat lebur tinggi)','Larut air'],
+ pri:['Serapan cepat (rawatan)','Lapisan perlindungan tahan lama (pencegahan)','Tahan hujan','Keselamatan pengguna (kurang pelarut, tiada habuk)','Stabil dalam simpanan panas','Selamat kepada tanaman (fitotoksik rendah)','Mudah disukat','Tak perlu kacau','Kurang haus muncung','Kos rendah','Mudah didapati di Malaysia'],priNeg:['serapan perlahan','lapisan perlindungan tak tahan lama','hanyut bila hujan','risiko pengguna lebih tinggi','tak tahan simpanan panas','risiko fitotoksik lebih tinggi','sukar disukat','perlu kacauan berterusan','lebih haus muncung','mahal','sukar didapati di sini'],
+ top:'Cadangan lalai',why:'Kuat pada: ',noPri:'Tanda sekurang-kurangnya satu keperluan dahulu.',
+ mixLead:'Tanda apa yang masuk tangki dan aplikasi beri urutannya. Urutan salah menyebabkan gumpalan, pemisahan dan muncung tersumbat.',
+ mixWhat:'Apa yang masuk tangki?',mixStage:'Keadaan pokok sekarang',stages:['Biasa','Sedang berpucuk','Berbunga atau buah kecil'],stageNote:{1:'Berpucuk: daun muda belum ada lapisan lilin, jadi risiko lecur minyak, pelarut dan penyebar paling tinggi.',2:'Berbunga atau buah kecil: bunga dan buah kecil gugur sebaik melecur. Jangan campur minyak atau EC pada peringkat ini; sembur berasingan.'},stageEsc:'<b>Pokok sedang {s}: amaran di atas bukan \'berhati-hati\', ia \'sembur berasingan\'.</b> Jangan bertaruh pada ujian botol; tunggu pucuk keras atau buah stabil sebelum mencampur.',droneOil:'<b>Minyak ini tidak boleh masuk tangki dron: {list}.</b> Minyak di darat bergantung pada 300–400 L air untuk menyebarkan 0.5–1% minyak dengan nipis; dron membawa 10–15 L seekar, jadi peratusan yang sama ialah 15–30 kali kurang minyak dan tidak berkesan, dan minyak seekar yang sama menjadikan tangki 15–30% minyak yang tiada pengemulsi dapat pegang, mendarat hampir minyak tulen, melecur, dan melekit pam dan muncung. Dron hanya guna adjuvan anti-hanyut dan anti-sejat yang labelnya menyebut penggunaan dron.',droneCap:'<b>Jenis kapsul tidak boleh masuk dron ({list}).</b> Pam dron berjalan pada tekanan dan ricih tinggi, memecahkan dinding kapsul, dan pelepasan perlahan menjadi sekali lepas; anda bayar untuk kapsul dan sembur produk biasa. Guna SC atau EW.',droneWP:'<b>WP tidak boleh masuk dron.</b> Zarah kasar, muncung halus, pasti tersumbat. Guna SC atau WG (pastikan sebar sepenuhnya sebelum dimuat).',droneEC:'EC dalam tangki dron: semburan darat guna kira-kira 300 L air seekar, dron kira-kira 12 L, jadi dos yang sama kira-kira 25 kali lebih pekat, termasuk pelarut. Bukan semasa berpucuk atau berbunga; selain itu guna kadar dron pada label, dan jika label tiada kadar dron, jangan tukar sendiri.',droneNote:'<b>Jangan kurangkan dos untuk dron.</b> Bahan aktif seekar kekal sama seperti semburan darat; hanya air yang kurang. Yang berubah ialah pembawa: EC kepada SC atau OD, penyebar darat dan minyak kepada adjuvan dron, dan elak pucuk dan bunga. Kadar dikira seekar, bukan setangki. Lihat Pilih atau baris Dron pada setiap kad jenis untuk jenis yang sesuai; butiran dalam bahagian Prinsip terakhir.',sprayerFrom:'Penyembur',grpPest:'Racun perosak',grpAdj:'Adjuvan · baja · minyak',version:'Versi',
+ mixNone:'Tanda formulasi yang hendak dicampur.',
+ warnCap:'Produk kapsul (CS, ZC, ZW, ZE) tak tahan ricih kuat: guna tekanan pam rendah, elak kitaran pintasan lama, bilas segera selepas sembur.',mixSteps:{cond:'Adjuvan jenis ini masuk dahulu; kacau hingga larut sepenuhnya sebelum sebarang racun. Ikut urutan label',fill:'Isi tangki separuh air, mulakan kacauan',dry:'Produk kering dahulu. Biar setiap satu sebar sepenuhnya sebelum yang seterusnya',flow:'Kemudian ampaian berasaskan air. Jangan tuang atas gumpalan serbuk terapung',emul:'Kemudian emulsi berasaskan minyak. Pelarutnya menstabilkan yang sudah masuk',sol:'Kemudian cecair larut air',adj:'Adjuvan, baja foliar dan penembus paling akhir',top:'Tambah air sambil kacau. Sembur hari yang sama, jangan biar semalaman'},
+ mixOther:{cond:'Adjuvan yang labelnya kata masuk dahulu (jenis lesitin, alkohol lemak etoksilat)',adj:'Penyebar / pelekat / penembus',dish:'Cecair pencuci pinggan — jangan; tekan untuk sebab',foliar:'Baja foliar (Ca, Mg, mikronutrien kelat)',oil:'Minyak mineral atau sayuran',humic:'Penambah (jenis asid fulvik / humik)',faa:'Baja cecair fermentasi (asid amino ikan, eko-enzim)',neem:'Minyak neem',orange:'Minyak oren (d-limonena)'},warnNeem:'Minyak neem: neem perahan sejuk tidak teremulsi sendiri; pracampur dalam baldi air suam dengan pengemulsi sebelum tangki, atau beli neem EC yang diformulasi. Azadirachtin terurai dalam cahaya matahari dan air beralkali: sembur lewat petang, habiskan tangki hari yang sama. Guna 0.5–1%, daun keras sahaja, elak pucuk dan berbunga.',warnOrange:'Minyak oren ialah pelarut, bukan lemak: 0.1–0.2% penyebar-penembus yang baik; melebihi kira-kira 0.5% ia menanggalkan lilin daun, melecurkan pucuk dan bunga, dan merosakkan getah penyembur lama.',warnBoth:'<b>Jangan letak neem dan minyak oren dalam tangki yang sama.</b> Minyak oren ialah pelarut dan menolak neem ke dalam daun: dua minyak tambah satu pelarut. Selang-selikan minggu demi minggu: neem minggu ini untuk sisik dan hama, minyak oren minggu depan untuk menumbangkan koya dan afid.',botPair:{title:'{b} bertembung dengan yang lain dalam tangki:',oil:'tambah minyak mineral atau sayuran → dua minyak bertindan, risiko lecur berganda. Pilih satu.',spread:'tambah penyebar / penembus / cecair pencuci pinggan → minyak botani sudah menjadi penyebar-penembus; bertindan hanya bermakna aliran dan lilin tertanggal. Buang penyebar.',solv:'dengan EC / ME / DC → racun sudah membawa pelarut dan surfaktan berat; tambah minyak botani, pucuk dan bunga berisiko tinggi. Ujian botol, separuhkan kadar, atau sembur berasingan.',od:'dengan OD → OD sudah berasaskan minyak, tambah minyak jadi dua minyak. Pilih satu.',cap:'dengan jenis kapsul (CS, ZC, ZW, ZE) → minyak oren ialah pelarut dan melarutkan dinding kapsul, pelepasan perlahan menjadi sekali lepas. Sembur berasingan.',alk:'dengan penambah beralkali → azadirachtin terurai dalam air beralkali dalam beberapa jam, jadi sia-sia. Sembur berasingan.',ca:'dengan baja foliar Ca/Mg → kalsium dan magnesium memecahkan emulsi, minyak berkumpul menjadi gumpalan, dan setiap gumpalan pada daun ialah bintik lecur. Ujian botol; jika berasingan, sembur berasingan.'},warnBot:'Minyak neem dan minyak oren:<br>1. Minyak neem perahan sejuk tidak teremulsi sendiri: pracampur dalam baldi air suam dengan pengemulsi sebelum tangki, atau beli neem EC yang diformulasi. Azadirachtin terurai dalam cahaya matahari dan air beralkali: sembur lewat petang, habiskan tangki hari yang sama.<br>2. Minyak oren ialah pelarut, bukan lemak: 0.1–0.2% penyebar-penembus yang baik, melebihi kira-kira 0.5% ia menanggalkan lilin daun, melecurkan pucuk dan bunga, dan merosakkan getah penyembur lama.<br>3. Kedua-duanya dikira minyak: bukan dengan sulfur, klorotalonil atau kaptan; jangan tambah minyak atau penyebar lain, ia sendiri penyebar dan lebih hanya bermakna aliran dan lecur; elak panas tengah hari.<br>4. Jangan letak neem dan minyak oren dalam tangki yang sama juga: minyak oren ialah pelarut dan menolak neem ke dalam daun, dua minyak tambah satu pelarut. Selang-selikan minggu demi minggu.',warnFAA:'Asid amino ikan dan fermentasi eko-enzim:<br>1. Tapis dengan kain dahulu: hampas ikan, sisik dan sisa gula ialah penyumbat muncung nombor satu.<br>2. Asid amino mengkelat logam; dalam tangki dengan kuprum atau mankozeb ia melemahkan racun kulat, dan fermentasi ini berasid (kira-kira pH 4), yang juga meningkatkan fitotoksik kuprum.<br>3. Sebarang racun kulat dalam tangki membunuh mikrob hidupnya; boleh sebagai nutrisi tulen, sembur berasingan jika mahukan kesan mikrob.<br>Guna pada 1:500 hingga 1:1000 dan habiskan tangki pada hari yang sama.',blockDish:'<b>Keluarkan cecair pencuci pinggan dari tangki dan urutan campuran akan muncul.</b> Tiada situasi yang memerlukannya.',warnDish:'<b>Cecair pencuci pinggan bukan penyebar.</b> Ia nampak berkesan, titisan berhenti membentuk manik atas daun, sebab itu tabiat ini kekal; yang tak nampak ialah kosnya dua minggu kemudian.<br>1. Penyahgris melarutkan lemak, dan kutikel daun ialah lilin: pucuk dan buah muda melecur, daun matang hilang penghalang hujannya sendiri berminggu-minggu.<br>2. Kandungan tak diketahui: pewangi, pewarna, agen antibakteria, garam pemekat, pH dari 7 hingga 10; tiada satu pun diuji dengan racun, ada yang menggumpalkan SC.<br>3. Buih: separuh tangki buih menyembunyikan paras air, pam menyedut udara, sepertiga terakhir menyembur udara.<br>4. Dos hanya tekaan: satu penutup botol dalam 16 L boleh 0.05% atau 0.5%.<br>Penyebar bukan ionik pertanian berharga beberapa ringgit setangki dan buat kerja sama yang nampak tanpa kos yang tak nampak.',warnHumic:'Produk fulvik dan humik tiada bukti kukuh meningkatkan pelindung sentuhan (mankozeb, kuprum, klorotalonil); dengan kuprum ia boleh mengurangkan aktiviti. Periksa pH produk dahulu: humat kalium biasanya beralkali (pH 8–10) dan mengurai mankozeb serta sesetengah racun serangga. Sentiasa ujian botol.',
+ jar:'Sentiasa buat ujian botol dahulu: air sama, nisbah sama, urutan sama, 1 liter dalam botol jernih, biar 15 minit. Gumpalan, ketulan, lapisan minyak atau mendapan → jangan campur.',
+ warnWPEC:'WP mudah menggumpal apabila pelarut EC ditambah. Ujian botol wajib.',warnFoliar:'Baja foliar kalsium dan magnesium boleh menggumpalkan ampaian; air keras pun sama. Ujian botol atau sembur berasingan.',warnFoliarChel:'Mikronutrien kelat (jenis asid amino atau EDTA) menarik logam keluar daripada racun kulat kuprum dan mankozeb lalu melemahkannya. Jika racun kulat logam ada dalam tangki, sembur berasingan.',warnOD:'OD bercampur butiran boleh sebar air menjadi pekat. Kacau dengan baik.',
+ calc:{title:'Banding dua botol',packHint:'Pek biasa',wvHint:'Jika label tulis 25% w/v pilih % w/v; untuk label w/w guna angka g/L di sebelahnya.',ta:'Produk A',tb:'Produk B',form:'Bentuk',liq:'Cecair (g/L)',sol:'Pepejal (%)',load:'Kandungan',pack:'Pek',price:'Harga RM',rate:'Kadar label',ru:{tank:'setangki',per100:'setiap 100 L',ratio:'nisbah 1 :'},tank:'Saiz tangki L',ai:'Bahan aktif setangki',measure:'Sukat setangki',cost:'Kos setangki',perG:'Setiap gram bahan aktif',vFill:'Isi kedua-dua produk dan keputusan muncul di sini. Kadar mesti dari label; aplikasi tidak mencadangkan dos.',vSame:'Dos sama. {c} lebih murah {p}% setiap gram bahan aktif dan menjadi pilihan lalai.',vDiff:'Pada kadar label {a} memberi {p}% lebih bahan aktif setangki berbanding {b}. Label bukan dos yang sama, jadi banding harga tidak bermakna sehingga anda tahu dos mana yang betul.',inert:'{c} meletakkan {p}% lebih formulasi pada pokok setangki, jadi lebih minyak, pelarut dan surfaktan bersamanya.',vEq:'Dos sama dan harga segram sama. Pilih ikut simpanan dan kemudahan menyukat.'},
+ sciLead:'Faham apa yang berlaku dalam botol, anda faham kenapa perlu goncang, kenapa muncung tersumbat, dan kenapa kandungan tinggi bukan keberkesanan tinggi.',
+ sci:[
+  ['Apa itu emulsi?','<p><b>Minyak dan air tidak bercampur.</b> Tuang bersama, ia berasingan menjadi dua lapisan. Goncang kuat, minyak pecah menjadi titisan kecil dalam air, tetapi sebaik berhenti, titisan berlanggar, bergabung, dan dalam beberapa minit dua lapisan terbentuk semula.</p><p><b>Emulsi</b> ialah keadaan di mana titisan minyak itu kekal dalam air dan tidak bergabung. Yang membolehkannya ialah <b>pengemulsi</b>: molekul dengan kepala suka air dan ekor suka minyak. Pengemulsi berbaris di permukaan setiap titisan, ekor dalam minyak, kepala menghadap keluar, supaya titisan dipisahkan dan tidak bercantum bila bersentuh.</p><p>Emulsi yang anda sudah kenal: <b>santan</b> (titisan minyak dalam air, dipegang protein kelapa), susu, mayonis. Lapisan minyak yang terapung atas santan yang dibiarkan ialah emulsi sedang "creaming"; goncang sekali ia kembali.</p><p><b>Kenapa racun perosak perlu emulsi:</b> kebanyakan bahan aktif larut minyak dan langsung tidak larut air. Untuk menyebarkannya sekata dalam setangki air hanya ada dua jalan: larutkan dalam minyak dan emulsikan (EC, EW, ME), atau kisar menjadi serbuk halus dan ampaikan (SC, WP, WG).</p><p><b>Dua arah:</b> titisan minyak dalam air ialah <b>minyak dalam air</b> (EW; boleh dicairkan lagi dengan air). Titisan air dalam minyak ialah <b>air dalam minyak</b> (EO; pekat, seperti mentega).</p><p><b>Titisan lebih halus bermakna emulsi lebih stabil dan lebih jernih.</b> Titisan kasar beberapa mikron kelihatan seperti susu dan naik ke atas bila dibiarkan; titisan sangat halus bawah 0.1 µm hampir jernih dan tidak berasingan (ME).</p>'],
+  ['Larutan, emulsi, ampaian: tiga keadaan selepas cair','<div class="three">JAR3</div><p><b>Larutan</b>: bahan aktif larut dalam air. Jernih. Tiada mendapan, tak perlu kacau (SL, SP, SG).</p><p><b>Emulsi</b>: bahan aktif larut dalam titisan minyak, titisan terapung dalam air. Rupa seperti susu. Titisan naik ke atas (creaming), jadi perlu goncang (EC, EW, ME).</p><p><b>Ampaian</b>: zarah pepejal tergantung dalam air. Keruh. Zarah mendap, jadi kacau berterusan (SC, WP, WG, CS).</p><p>Bahan aktif yang sama boleh dibuat jenis berbeza. Jenis mengubah <b>cara dan kelajuan ia masuk ke tumbuhan</b>, bukan keupayaannya membunuh perosak.</p>'],
+  ['Keluarga emulsi sepintas lalu: kod E dan kod Z','<table><tr><th>Kod</th><th>Di mana minyak</th><th>Satu baris</th></tr><tr><td>EC</td><td>Dalam pelarut; teremulsi bila dicairkan</td><td>Klasik, pelarut paling banyak</td></tr><tr><td>EW</td><td>Titisan minyak sudah dalam air</td><td>EC dengan kurang pelarut</td></tr><tr><td>EO</td><td>Minyak membalut air</td><td>EW terbalik, anti-hanyut</td></tr><tr><td>ME</td><td>Titisan sangat halus, jernih</td><td>Tak perlu goncang, penembusan paling cepat</td></tr><tr><td>SE</td><td>Titisan minyak dan zarah pepejal</td><td>SC dan EW dalam satu botol</td></tr><tr><td>EG / EP</td><td>Dipegang pada butiran atau serbuk larut</td><td>EC tanpa pelarut cecair</td></tr><tr><td>ES</td><td>Seperti EW, dengan pewarna</td><td>Rawatan benih</td></tr><tr><td>DC</td><td>Pelarut bercampur air</td><td>Zarah halus terbentuk bila dicairkan</td></tr><tr><td>CS</td><td>Dibalut dalam kapsul</td><td>Lepas perlahan, paling selamat</td></tr><tr><td>ZC</td><td>Kapsul dan zarah pepejal</td><td>CS + SC</td></tr><tr><td>ZW</td><td>Kapsul dan titisan minyak</td><td>CS + EW</td></tr><tr><td>ZE</td><td>Kapsul, titisan dan zarah</td><td>CS + SE, tiga fasa</td></tr><tr><td>OL / OF / UL</td><td>Minyak ialah pencair</td><td>Tiada air: mesin kabus atau ULV</td></tr></table><p>Maksud Z: fasa cepat dan fasa perlahan dalam satu botol. Fasa cepat (pepejal atau titisan minyak) menumbangkan; kapsul meliputi dua hingga tiga minggu berikutnya. Harganya simpanan rapuh dan kos lebih tinggi.</p>'],
+  ['Surfaktan: pembasah, penyebar, pengemulsi','<p>Bahan "lengai" bukan pengisi. Setiap satu ada tugas:</p><p><b>Pembasah</b> menjadikan serbuk mesra air supaya ia tenggelam, bukan terapung berkerak.</p><p><b>Penyebar</b> menyaluti setiap zarah supaya zarah tolak-menolak dan tidak menggumpal.</p><p><b>Pengemulsi</b> duduk di sempadan minyak-air supaya minyak boleh pecah jadi titisan halus dan kekal dalam air.</p><p>Kalsium dan magnesium dalam air keras merampas surfaktan ini; sebab itu air keras memecahkan emulsi dan memendapkan ampaian.</p>'],
+  ['Kenapa botol rosak: lima jenis kegagalan','BOTTLE<table><tr><th>Apa dilihat</th><th>Jenis</th><th>Punca</th><th>Tindakan</th></tr><tr><td>Lapisan minyak di atas</td><td>EW, ME</td><td>Titisan naik dan bergabung</td><td>Goncang kuat. Jika lapisan kekal → emulsi pecah, buang</td></tr><tr><td>Mendapan yang boleh digoncang semula</td><td>SC, SE, OD</td><td>Zarah mendap</td><td>Normal. Goncang sebelum guna</td></tr><tr><td>Lapisan keras tak boleh goncang</td><td>SC, OD</td><td>Mendapan termampat (caking)</td><td>Buang. Ia menyumbat muncung</td></tr><tr><td>Berpasir, zarah membesar</td><td>SC</td><td>Zarah kecil larut dan tumbuh pada zarah besar (pertumbuhan hablur)</td><td>Buang. Zarah besar kurang berkesan dan menyumbat muncung</td></tr><tr><td>Pekat seperti gel</td><td>SC, OD</td><td>Pemekat atau penyebar gagal dalam panas</td><td>Jika tak cair dengan air → buang</td></tr></table><p>Corak: <b>cecair berasaskan air tak tahan panas</b>; jenis kering (WP, WG) paling tahan simpan. Stor di Malaysia sering melebihi 35°C, jadi habiskan cecair dalam satu musim.</p>'],
+  ['Kelajuan mendap: saiz dan ketumpatan','<p>Zarah lebih besar dan berat mendap lebih cepat. Hukum Stokes: kelajuan mendap naik dengan kuasa dua diameter zarah. Diameter dua kali, kelajuan empat kali.</p><p>Jadi:</p><p>· SC berkualiti dikisar ke 1–3 µm dan ambil berhari-hari untuk mendap; yang murah berasingan dalam beberapa jam.</p><p>· Zarah WP jauh lebih kasar (5–20 µm), sebab itu kacauan tak boleh berhenti semasa sembur WP.</p><p>· Pemekat melambatkan mendapan dengan menjadikan air "lebih pekat", bukan menjadikan zarah lebih ringan.</p>'],
+  ['Cara buat ujian botol','<p>1. Botol jernih, 1 liter air yang akan digunakan.</p><p>2. Tambah setiap produk pada nisbah ladang, mengikut urutan tangki, goncang 10 saat selepas setiap satu.</p><p>3. Biar 15 minit.</p><p>4. Lulus: keruh sekata atau putih susu sekata, dan kembali sekata bila digoncang.</p><p>5. Gagal: gumpalan, ketulan, lapisan minyak, manik minyak, mendapan keras, tukar warna atau panas.</p><p>6. Jika gagal, sembur berasingan. Jangan paksa campuran.</p>'],
+  ['Kandungan tinggi bukan keberkesanan tinggi: kira g b.a./ekar','CALC<p>250 g/L atau 430 g/L pada label ialah kepekatan dalam botol, bukan dos di ladang.</p><p>Dos ladang ialah <b>gram bahan aktif seekar atau setangki</b>. Satu liter produk 250 g/L dan 0.58 liter produk 430 g/L meletakkan jumlah yang sama pada pokok.</p><p>Kandungan mengubah kos pengangkutan, pembungkusan dan penyukatan. Ia tidak mengubah keberkesanan. Bandingkan produk <b>pada dos bahan aktif yang sama</b>: jenis mana serap lebih cepat, lindung lebih lama, lebih selamat, lebih tahan simpan.</p>'],
+  ['Kualiti air: kekerasan, pH, suhu','<p><b>Air keras</b> (biasa dari telaga dan sungai bukit): kalsium dan magnesium memecahkan emulsi dan penyebaran. Guna pelembut air atau produk tahan air keras.</p><p><b>pH</b>: kebanyakan bahan aktif paling stabil sedikit berasid (5.5–6.5); air beralkali (pH melebihi 8) mengurai sesetengahnya dalam beberapa jam.</p><p><b>Suhu</b>: air suam (melebihi 30°C) lebih mudah memecahkan emulsi dan mempercepat penguraian. Guna air suhu bilik.</p>'],
+  ['Dapat lebih daripada pelindung: liputan, lekatan, masa','<p>Satu pembetulan dahulu: sistemik atau tidak ialah sifat <b>bahan aktif</b>, bukan formulasi. Mankozeb sebagai EW masih pelindung sentuhan. Bahan aktif tak boleh bergerak, jadi keberkesanan bergantung pada tiga perkara: di mana ia mendarat, berapa lama ia kekal, dan sama ada ia masih aktif bila spora tiba.</p><p><b>1. Liputan, tuil terbesar.</b> Pelindung hanya melindungi milimeter persegi yang disentuhnya. Terlepas bawah daun, tangkai buah, celah dahan, kulat masuk dari situ. Amalan: sembur hingga berkilat, bukan hingga menitis; muncung kon berongga untuk titisan halus; kedua-dua sisi kanopi; berjalan perlahan. Memangkas durian supaya semburan tembus kanopi ialah penambah pelindung dengan sendirinya.</p><p><b>2. Adjuvan, setiap satu menyelesaikan satu masalah:</b></p><table><tr><th>Masalah</th><th>Adjuvan</th><th>Perhatian</th></tr><tr><td>Titisan membentuk manik atas daun berlilin</td><td>Penyebar / pembasah (surfaktan bukan ionik)</td><td>Penyebar super organosilikon beri liputan penuh tetapi boleh terus mengalir dan menolak bahan aktif ke stoma; fitotoksik pada pucuk dan buah muda</td></tr><tr><td>Hujan menghanyutkannya</td><td>Pelekat (lateks, pinolena, resin) atau penyebar-pelekat</td><td>Pelekat berlebihan menghalang lapisan dibasahi semula dan tersebar semula</td></tr><tr><td>Lapisan kering bertompok dalam panas</td><td>Pelembap (jenis gliserol)</td><td>Kecil</td></tr><tr><td>Air keras, pH salah</td><td>Pelaras air, pengasid / penimbal</td><td>Kuprum dan mankozeb hilang aktiviti dalam air beralkali; periksa pH sebelum yang lain</td></tr></table><p><b>3. Masa: pelindung mesti ada dahulu.</b> Sembur sebelum hujan yang mencetus jangkitan, bukan selepas. Ulang selepas kira-kira 25 mm hujan atau dua hingga tiga minggu, mana lebih dahulu. Penambah paling murah dan paling kerap tersilap.</p><p><b>4. Pilih dalam keluarga pelindung.</b> Zarah lebih halus, SC atau WG yang baik pada 1–3 µm, meliputi lebih permukaan segram berbanding WP kasar dan tersebar semula lebih baik dengan embun; CS memanjangkan selang. Kuprum dan mankozeb sebenarnya bergantung pada hujan renyai dan embun untuk tersebar semula, jadi guna pelekat sederhana, bukan berat.</p><p><b>5. Gandingkan dengan sistemik.</b> Pelindung berbilang tapak dengan sistemik satu tapak bukan sekadar tambahan: pelindung meliputi apa yang sistemik terlepas, dan campuran melambatkan kerintangan terhadap sistemik. Sebab itu ia gandingan piawai.</p><p><b>Apa yang adjuvan tak boleh buat:</b> menjadikan bahan bukan sistemik menjadi sistemik. Penembus boleh menolak sesetengah bahan aktif sedikit ke dalam daun (translaminar), tetapi pelindung sentuhan sebenar seperti kuprum kekal di permukaan walau apa ditambah. Jika perlu bahan kimia di dalam tisu, perlukan molekul lain, bukan adjuvan lebih baik.</p>'],
+  ['Glosari adjuvan: maksud perkataan ini dalam aplikasi','<table><tr><th>Istilah</th><th>Apa itu</th><th>Bila</th></tr><tr><td>Surfaktan</td><td>Molekul dengan kepala suka air dan ekor suka minyak; asas semua penyebaran, pengemulsian dan penyebaran</td><td>—</td></tr><tr><td>Bukan ionik</td><td>Surfaktan yang kepalanya tiada cas (alkohol etoksilat, organosilikon, polisorbat). Tidak bertindak balas dengan kalsium dan magnesium air keras, tidak menggumpalkan ampaian, buih rendah, berfungsi pada sebarang pH</td><td>Maksud label \'tambah pembasah\'</td></tr><tr><td>Anionik</td><td>Kepala bercas negatif (sulfat, sulfonat). Cecair pencuci pinggan, serbuk pencuci. Buih banyak, memendak dalam air keras</td><td>Jangan sekali-kali dalam tangki sembur</td></tr><tr><td>Penyebar / pembasah</td><td>Menurunkan tegangan permukaan supaya semburan berlapisan di daun berlilin dan bukan membentuk manik</td><td>Bila semburan membentuk manik; jangan semasa berpucuk</td></tr><tr><td>Penembus</td><td>Menolak bahan aktif melalui lilin ke dalam daun. \'Penyebar super\' organosilikon jenis paling kuat</td><td>Sistemik dan semburan rawatan; pelindung tidak perlukan; bukan pada daun muda</td></tr><tr><td>Pelekat</td><td>Lateks, pinolena, resin; melekatkan lapisan pada daun menentang hujan</td><td>Sebelum hujan; sederhana dengan kuprum dan mankozeb supaya embun masih boleh menyebarkannya semula</td></tr><tr><td>Minyak mineral / COC</td><td>Minyak parafin dan pengemulsi; adjuvan minyak paling lembut; melemaskan sisik dan hama</td><td>Daun keras, 0.5–1%; satu minyak setangki</td></tr><tr><td>MSO, minyak biji termetil</td><td>Minyak sayuran ditukar kepada metil ester (tindak balas biodiesel); lebih cair dan lebih menembus daripada minyak mentah</td><td>Sering disebut pada label racun rumpai; minyak paling tidak lembut pada tanaman, jauhi pucuk</td></tr><tr><td>Minyak neem / oren</td><td>Lihat amaran urutan campur</td><td>Setiap satu bersendirian, selang-seli minggu demi minggu</td></tr><tr><td>Pelaras air</td><td>Ammonium sulfat, pengasid, penimbal; mengendalikan air keras dan pH</td><td>Bila label atau air memerlukannya, ditambah dahulu</td></tr><tr><td>Adjuvan dron</td><td>Anti-hanyut dan anti-sejat, direka untuk 10–15 L air seekar, sering dengan sedikit minyak termetil</td><td>Dron sahaja, pada kadarnya sendiri; minyak darat bukan pengganti</td></tr></table>'],
+  ['Dron: dos sama, pembawa berbeza','<p>Semburan darat guna kira-kira 300 L air seekar; dron membawa 10–15 L. <b>Pokok perlukan gram bahan aktif yang sama</b>; hanya air 25 kali kurang, sebab itu dos yang sama 25 kali lebih pekat dalam tangki.</p><p><b>Kenapa dos tidak boleh dikurangkan:</b> kurang bahan aktif ialah dos rendah, kawalan lemah, dan bagi racun kulat tekanan pemilihan kerintangan. Dakwaan \'dron jimat 20–30% produk\' adalah tentang kurang lebihan sembur ke tanah, bukan lesen memberi pokok kurang; jika label tiada kadar dron, guna kadar penuh seekar.</p><p><b>Apa itu pembawa:</b> semua dalam tangki kecuali bahan aktif: air, pelarut, pengemulsi, surfaktan, minyak, adjuvan. Di darat pembawa hampir semuanya air; ambil air itu dan yang lain menonjol, dan di situlah lecur dron datang.</p><p><b>Menukar pembawa, empat perkara:</b></p><p>1. Tukar jenis formulasi: bahan aktif sama, pakej pembawa berbeza. EC (pelarut dan pengemulsi) kepada SC (air dan penyebar) atau OD (minyak ringan direka untuk isipadu rendah). WP kepada WG atau SC.</p><p>2. Tukar adjuvan: penyebar darat dan minyak ladang keluar; produk anti-hanyut, anti-sejat berlabel dron masuk, pada kadarnya sendiri.</p><p>3. Terima air dron: 10–15 L ialah apa yang dibawanya; jangan terbang dua kali untuk \'tambah air\'.</p><p>4. Tukar masa: pembawa paling pekat semasa mendarat, jadi elak pucuk, bunga dan tengah hari.</p><p><b>Contoh durian:</b> semburan darat meletakkan 400 ml 250 EW (100 g bahan aktif) seekar dalam 300 L. Penukaran salah: 400 ml ke dalam 12 L. Penukaran betul: 100 g bahan aktif yang sama = 230 ml 430 SC, dalam 12 L dengan adjuvan dron, awal pagi pada daun keras. Bahan aktif tidak berganjak; kenderaannya yang berubah.</p><p>Semak sebarang penukaran seekar mengikut bahan aktif, bukan ml, dalam Banding dua botol.</p>']
+ ]}
+};
+
+/* ---------- formulation data ---------- */
+/* dilute: sol|emu|sus|dry ; phase: L|S ; agit 0-3 ; ai: oil|solid|water (compatible AI types)
+   score: uptake,resid,rain,safety,heat,crop,measure,noagit,nozzle,cost  (0-3) */
+const F = [
+{c:'EC',drone:1,avail:3,phase:'L',fam:'emu',dilute:'emu',agit:1,spray:1,ai:['oil'],load:'100–500 g/L',
+ score:[3,1,3,1,2,1,3,3,3,3,3],
+ n:{zh:'乳油',en:'Emulsifiable concentrate',ms:'Pekatan boleh emulsi'},
+ state:{zh:'溶在有机溶剂里，加乳化剂',en:'Dissolved in organic solvent with emulsifier',ms:'Larut dalam pelarut organik dengan pengemulsi'},
+ pro:{zh:['吸收快、耐雨','量取方便，不需搅拌','工艺简单，价格低','储存稳定'],en:['Fast uptake, rainfast','Easy to measure, no agitation','Simple to make, cheap','Stable in storage'],ms:['Serapan cepat, tahan hujan','Mudah disukat, tak perlu kacau','Mudah dibuat, murah','Stabil dalam simpanan']},
+ con:{zh:['溶剂易燃、有味、经皮肤吸收','溶剂本身可引起药害，尤其幼叶幼果','硬水易破乳','对包装、喷雾器胶件有腐蚀'],en:['Solvent is flammable, smelly, absorbed through skin','Solvent itself can burn young leaves and fruit','Hard water breaks the emulsion','Attacks rubber seals and some plastics'],ms:['Pelarut mudah terbakar, berbau, diserap kulit','Pelarut sendiri boleh melecur daun dan buah muda','Air keras memecahkan emulsi','Merosakkan getah dan sesetengah plastik']},
+ store:{zh:'常温阴凉，远离火源；开封后拧紧',en:'Cool, away from flame; cap tightly after opening',ms:'Sejuk, jauh dari api; tutup ketat selepas buka'},
+ safe:{zh:'吸入、皮肤接触风险最高的常见剂型',en:'Highest inhalation and skin risk of the common types',ms:'Risiko sedutan dan kulit tertinggi antara jenis biasa'},
+ ex:{zh:'氯氰菊酯、毒死蜱、丙环唑',en:'cypermethrin, chlorpyrifos, propiconazole',ms:'sipermetrin, klorpirifos, propikonazol'},
+ use:{zh:'治疗性喷雾、雨季、经济型',en:'Curative sprays, wet season, budget',ms:'Semburan rawatan, musim hujan, bajet'}},
+{c:'EW',drone:2,avail:2,phase:'L',fam:'emu',dilute:'emu',agit:1,spray:1,ai:['oil'],load:'100–300 g/L',
+ score:[3,2,3,2,1,2,3,2,3,2,2],
+ n:{zh:'水乳剂',en:'Emulsion, oil in water',ms:'Emulsi minyak dalam air'},
+ state:{zh:'溶在细油滴里，油滴已预先分散在水中',en:'Dissolved in oil droplets already emulsified in water',ms:'Larut dalam titisan minyak yang sudah teremulsi dalam air'},
+ pro:{zh:['溶剂量比 EC 少很多，气味小','吸收快、耐雨，接近 EC','药害风险低于 EC','不易燃'],en:['Far less solvent than EC, low odour','Uptake and rainfastness close to EC','Lower phytotoxicity than EC','Not flammable'],ms:['Pelarut jauh kurang daripada EC, bau rendah','Serapan dan ketahanan hujan hampir EC','Fitotoksik lebih rendah daripada EC','Tidak mudah terbakar']},
+ con:{zh:['乳液不稳定：高温或冷冻会分层、破乳','使用前必须摇匀','有效成分可能从油滴中结晶析出','含量通常做不高'],en:['Emulsion is fragile: heat or freezing separates it','Must shake before use','Active can crystallise out of the oil phase','Loading usually limited'],ms:['Emulsi rapuh: panas atau beku memisahkannya','Mesti goncang sebelum guna','Bahan aktif boleh menghablur keluar dari fasa minyak','Kandungan biasanya terhad']},
+ store:{zh:'避热避冻，一季内用完；瓶底或瓶口有油层需摇匀检查',en:'Avoid heat and freezing; use within a season; check for oil layer',ms:'Elak panas dan beku; habiskan dalam satu musim; periksa lapisan minyak'},
+ safe:{zh:'比 EC 安全，仍含少量溶剂',en:'Safer than EC, still some solvent',ms:'Lebih selamat daripada EC, masih ada sedikit pelarut'},
+ ex:{zh:'戊唑醇、氯氟氰菊酯',en:'tebuconazole, lambda-cyhalothrin',ms:'tebukonazol, lambda-sihalotrin'},
+ use:{zh:'要 EC 的效果但少溶剂',en:'EC performance with less solvent',ms:'Prestasi EC dengan kurang pelarut'}},
+{c:'ME',drone:2,avail:1,phase:'L',fam:'emu',dilute:'emu',agit:0,spray:1,ai:['oil'],load:'20–150 g/L',
+ score:[3,1,3,1,2,1,3,3,3,1,1],
+ n:{zh:'微乳剂',en:'Microemulsion',ms:'Mikroemulsi'},
+ state:{zh:'溶在极细油滴里（<0.1 微米），透明',en:'Dissolved in ultra-fine droplets under 0.1 µm, transparent',ms:'Larut dalam titisan sangat halus bawah 0.1 µm, jernih'},
+ pro:{zh:['热力学稳定：不分层、不需摇','油滴极细，渗透最快','透明，兑水均匀'],en:['Thermodynamically stable: no separation, no shaking','Finest droplets, fastest penetration','Clear, dilutes evenly'],ms:['Stabil termodinamik: tak berasingan, tak perlu goncang','Titisan paling halus, penembusan paling cepat','Jernih, cair sekata']},
+ con:{zh:['表面活性剂用量很高，药害风险高','含量低，价格高','温度范围窄，过冷过热会变混浊'],en:['Very high surfactant load, high phytotoxicity risk','Low loading, expensive','Narrow temperature window; turns cloudy if too hot or cold'],ms:['Surfaktan sangat tinggi, risiko fitotoksik tinggi','Kandungan rendah, mahal','Julat suhu sempit; jadi keruh jika terlalu panas atau sejuk']},
+ store:{zh:'常温；变混浊表示已超出稳定范围',en:'Ambient; cloudiness means it left its stable range',ms:'Suhu bilik; keruh bermakna di luar julat stabil'},
+ safe:{zh:'溶剂少，但高表面活性剂刺激皮肤',en:'Low solvent, but high surfactant irritates skin',ms:'Pelarut rendah, tetapi surfaktan tinggi merengsakan kulit'},
+ ex:{zh:'阿维菌素、部分菊酯',en:'abamectin, some pyrethroids',ms:'abamektin, sesetengah piretroid'},
+ use:{zh:'需要极快渗透的低剂量产品',en:'Low-dose products needing very fast penetration',ms:'Produk dos rendah yang perlu penembusan sangat cepat'}},
+{c:'SC',drone:2,avail:3,phase:'L',dilute:'sus',agit:2,spray:1,ai:['solid'],load:'200–600 g/L',
+ score:[1,3,2,3,1,3,2,1,2,2,3],
+ n:{zh:'悬浮剂',en:'Suspension concentrate',ms:'Pekatan ampaian'},
+ state:{zh:'固体研磨成微米颗粒，悬在水中',en:'Solid milled to micron particles suspended in water',ms:'Pepejal dikisar ke zarah mikron, terampai dalam air'},
+ pro:{zh:['水基，无溶剂，无粉尘','药害风险低','含量可以做高','叶面留下保护层，持效好'],en:['Water-based: no solvent, no dust','Low phytotoxicity','High loading possible','Leaves a protective deposit, good residual'],ms:['Berasaskan air: tiada pelarut, tiada habuk','Fitotoksik rendah','Kandungan tinggi boleh dicapai','Tinggalkan lapisan pelindung, kesan tahan lama']},
+ con:{zh:['颗粒要先溶解才能进入植物，吸收慢','储存会沉降、结块、晶体长大','高温下变稠，寿命短','喷雾时需持续搅拌'],en:['Particles must dissolve before uptake: slower','Settles, cakes and grows crystals in storage','Thickens in heat, short shelf life','Needs continuous agitation'],ms:['Zarah mesti larut dahulu: serapan perlahan','Mendap, mengeras dan hablur membesar dalam simpanan','Pekat dalam panas, hayat simpan pendek','Perlu kacauan berterusan']},
+ store:{zh:'避热避冻，用前摇匀；有硬块不要用',en:'Avoid heat and frost; shake before use; discard if caked',ms:'Elak panas dan beku; goncang sebelum guna; buang jika mengeras'},
+ safe:{zh:'常见剂型中操作者最安全之一',en:'One of the safest common types for the operator',ms:'Antara yang paling selamat untuk pengguna'},
+ ex:{zh:'嘧菌酯、吡虫啉、噻嗪酮',en:'azoxystrobin, imidacloprid, buprofezin',ms:'azoksistrobin, imidakloprid, buprofezin'},
+ use:{zh:'预防性喷雾、注重安全',en:'Preventive sprays, safety-first',ms:'Semburan pencegahan, utamakan keselamatan'}},
+{c:'SE',drone:1,avail:1,phase:'L',fam:'emu',dilute:'sus',agit:2,spray:1,ai:['oil','solid'],load:'150–500 g/L',
+ score:[2,2,2,2,1,2,2,1,2,1,1],
+ n:{zh:'悬乳剂',en:'Suspo-emulsion',ms:'Suspo-emulsi'},
+ state:{zh:'固体颗粒 + 油滴同在水中（SC + EW 合一）',en:'Solid particles and oil droplets together in water (SC + EW in one)',ms:'Zarah pepejal dan titisan minyak bersama dalam air (SC + EW dalam satu)'},
+ pro:{zh:['一瓶装两种性质不同的有效成分','水基，溶剂少'],en:['Two actives of different nature in one bottle','Water-based, low solvent'],ms:['Dua bahan aktif berbeza sifat dalam satu botol','Berasaskan air, pelarut rendah']},
+ con:{zh:['最难稳定的剂型：颗粒会跑进油滴、油滴会合并','储存寿命短，需摇匀','价格高'],en:['Hardest type to stabilise: particles migrate into oil, droplets merge','Short shelf life, must shake','Expensive'],ms:['Jenis paling sukar distabilkan: zarah masuk ke minyak, titisan bergabung','Hayat simpan pendek, mesti goncang','Mahal']},
+ store:{zh:'避热，尽快用完',en:'Avoid heat, use quickly',ms:'Elak panas, guna segera'},
+ safe:{zh:'与 SC 相近',en:'Similar to SC',ms:'Serupa dengan SC'},
+ ex:{zh:'复配杀菌剂、复配杀虫剂',en:'premixed fungicides and insecticides',ms:'campuran siap racun kulat dan serangga'},
+ use:{zh:'现成复配产品',en:'Ready-made premixes',ms:'Campuran siap'}},
+{c:'OD',drone:3,avail:2,phase:'L',dilute:'sus',agit:2,spray:1,ai:['solid'],load:'20–300 g/L',
+ score:[2,2,3,2,1,1,2,1,2,1,2],
+ n:{zh:'可分散油悬浮剂',en:'Oil dispersion',ms:'Penyebaran minyak'},
+ state:{zh:'固体颗粒悬在油里，兑水后油乳化',en:'Solid particles suspended in oil; the oil emulsifies in water',ms:'Zarah pepejal terampai dalam minyak; minyak teremulsi dalam air'},
+ pro:{zh:['自带油助剂：展布好、耐雨、渗透强','适合遇水会分解的有效成分'],en:['Built-in oil adjuvant: spreads well, rainfast, penetrating','Suits actives that break down in water'],ms:['Adjuvan minyak terbina: sebar baik, tahan hujan, menembus','Sesuai bahan aktif yang terurai dalam air']},
+ con:{zh:['黏度高，量取和冲洗麻烦','储存易分层结块','油分对幼嫩组织有药害风险','价格高'],en:['Viscous: awkward to measure and rinse','Separates and cakes in storage','Oil can scorch tender tissue','Expensive'],ms:['Pekat: sukar disukat dan dibilas','Berasingan dan mengeras dalam simpanan','Minyak boleh melecur tisu lembut','Mahal']},
+ store:{zh:'避热，用前充分摇匀',en:'Avoid heat, shake thoroughly before use',ms:'Elak panas, goncang rata sebelum guna'},
+ safe:{zh:'溶剂少，油性对皮肤温和',en:'Low solvent, oil is mild on skin',ms:'Pelarut rendah, minyak lembut pada kulit'},
+ ex:{zh:'烟嘧磺隆等除草剂',en:'nicosulfuron and other sulfonylurea herbicides',ms:'nikosulfuron dan racun rumpai sulfonilurea lain'},
+ use:{zh:'除草剂、需要自带油的产品',en:'Herbicides, products that need built-in oil',ms:'Racun rumpai, produk yang perlu minyak terbina'}},
+{c:'CS',drone:0,avail:2,phase:'L',fam:'cap',dilute:'sus',agit:1,spray:1,ai:['oil','solid'],load:'50–300 g/L',
+ score:[1,3,2,3,2,3,2,1,3,1,2],
+ n:{zh:'微囊悬浮剂',en:'Capsule suspension',ms:'Ampaian kapsul'},
+ state:{zh:'有效成分包在微小聚合物囊里，囊悬在水中',en:'Active sealed in tiny polymer capsules suspended in water',ms:'Bahan aktif dibalut dalam kapsul polimer halus terampai dalam air'},
+ pro:{zh:['缓慢释放，持效最长','毒性和气味被囊壁挡住，操作者更安全','药害风险低，减少挥发流失'],en:['Slow release, longest residual','Capsule wall blocks toxicity and odour: safer operator','Low phytotoxicity, less volatile loss'],ms:['Pelepasan perlahan, kesan paling tahan lama','Dinding kapsul menghalang ketoksikan dan bau: pengguna lebih selamat','Fitotoksik rendah, kurang kehilangan meruap']},
+ con:{zh:['起效慢，不适合急救','价格高','囊壁怕高温和强剪切，别用高压泵猛打'],en:['Slow to act, not for emergencies','Expensive','Capsules dislike heat and hard shearing: avoid violent high-pressure pumping'],ms:['Lambat bertindak, bukan untuk kecemasan','Mahal','Kapsul tak tahan panas dan ricih kuat: elak pam tekanan tinggi yang ganas']},
+ store:{zh:'避热，轻摇',en:'Avoid heat, shake gently',ms:'Elak panas, goncang perlahan'},
+ safe:{zh:'同一有效成分中最安全的形态',en:'Safest form of a given active',ms:'Bentuk paling selamat bagi sesuatu bahan aktif'},
+ ex:{zh:'氯氟氰菊酯、二甲戊灵',en:'lambda-cyhalothrin, pendimethalin',ms:'lambda-sihalotrin, pendimetalin'},
+ use:{zh:'长持效、住宅周边、蚊虫',en:'Long residual, near houses, public health',ms:'Kesan lama, berhampiran rumah, kesihatan awam'}},
+{c:'ZC',drone:0,avail:2,phase:'L',dilute:'sus',agit:2,spray:1,ai:['oil','solid'],fam:'cap',load:'100–300 g/L',
+ score:[2,3,2,3,1,3,2,1,2,1,2],
+ n:{zh:'微囊悬浮-悬浮剂',en:'Mixed CS + SC',ms:'Campuran ampaian kapsul + pekatan ampaian'},
+ state:{zh:'一瓶两相：微囊（缓释）+ 固体颗粒（速效），同在水中',en:'Two phases in one bottle: capsules (slow release) plus solid particles (fast), both in water',ms:'Dua fasa dalam satu botol: kapsul (lepas perlahan) dan zarah pepejal (cepat), kedua-duanya dalam air'},
+ pro:{zh:['速效 + 持效同时具备','水基，无溶剂，操作者安全','常见于复配杀虫剂：一个成分击倒，一个成分缓释'],en:['Fast action and long residual in one','Water-based, no solvent, safe to handle','Common in premixed insecticides: one active knocks down, the other releases slowly'],ms:['Tindakan cepat dan kesan tahan lama dalam satu','Berasaskan air, tiada pelarut, selamat dikendali','Biasa dalam campuran racun serangga: satu bahan aktif menumbangkan, satu lagi lepas perlahan']},
+ con:{zh:['两相各有各的沉降速度，储存分层复杂','囊壁怕高温和强剪切','价格高','用前必须摇匀，喷雾持续搅拌'],en:['Two phases settle at different rates: complex separation in storage','Capsules dislike heat and hard shearing','Expensive','Shake before use, agitate throughout'],ms:['Dua fasa mendap pada kadar berbeza: pemisahan rumit dalam simpanan','Kapsul tak tahan panas dan ricih kuat','Mahal','Goncang sebelum guna, kacau sepanjang masa']},
+ store:{zh:'避热避冻，轻摇；有硬块或油层丢弃',en:'Avoid heat and frost, shake gently; discard if caked or oily',ms:'Elak panas dan beku, goncang perlahan; buang jika mengeras atau berminyak'},
+ safe:{zh:'与 SC 相近',en:'Similar to SC',ms:'Serupa dengan SC'},
+ ex:{zh:'氯氟氰菊酯（囊）+ 噻虫嗪（悬浮）',en:'lambda-cyhalothrin (capsule) + thiamethoxam (suspension)',ms:'lambda-sihalotrin (kapsul) + tiametoksam (ampaian)'},
+ use:{zh:'要击倒又要持效的杀虫复配',en:'Insecticide premixes needing knockdown plus residual',ms:'Campuran racun serangga perlu tumbang cepat dan kesan lama'}},
+{c:'ZW',drone:1,avail:1,phase:'L',dilute:'sus',agit:2,spray:1,ai:['oil'],fam:'emu',load:'100–300 g/L',
+ score:[3,3,3,2,1,2,2,1,3,1,1],
+ n:{zh:'微囊悬浮-水乳剂',en:'Mixed CS + EW',ms:'Campuran ampaian kapsul + emulsi'},
+ state:{zh:'微囊（缓释）+ 油滴（速效），同在水中',en:'Capsules (slow release) plus oil droplets (fast), both in water',ms:'Kapsul (lepas perlahan) dan titisan minyak (cepat), kedua-duanya dalam air'},
+ pro:{zh:['油滴部分吸收快、耐雨；微囊部分持效','溶剂少于 EC'],en:['Oil-droplet part takes up fast and is rainfast; capsule part lasts','Less solvent than EC'],ms:['Bahagian titisan minyak serap cepat dan tahan hujan; bahagian kapsul tahan lama','Pelarut kurang daripada EC']},
+ con:{zh:['乳液和微囊都怕热，是最娇气的组合之一','油滴上浮、微囊下沉，静置后上下都会分层','价格高'],en:['Both emulsion and capsules dislike heat: one of the most fragile combinations','Droplets rise while capsules sink: separates top and bottom','Expensive'],ms:['Emulsi dan kapsul kedua-duanya tak tahan panas: antara kombinasi paling rapuh','Titisan naik, kapsul mendap: berasingan atas dan bawah','Mahal']},
+ store:{zh:'避热，一季内用完',en:'Avoid heat, use within a season',ms:'Elak panas, habiskan dalam satu musim'},
+ safe:{zh:'与 EW 相近',en:'Similar to EW',ms:'Serupa dengan EW'},
+ ex:{zh:'菊酯类双组分杀虫剂',en:'two-pyrethroid insecticide premixes',ms:'campuran dua piretroid'},
+ use:{zh:'速效油相 + 缓释囊相的杀虫剂',en:'Insecticides pairing a fast oil phase with a slow capsule phase',ms:'Racun serangga gabungan fasa minyak cepat dan fasa kapsul perlahan'}},
+{c:'ZE',drone:0,avail:0,phase:'L',dilute:'sus',agit:2,spray:1,ai:['oil','solid'],fam:'emu',load:'100–300 g/L',
+ score:[2,3,2,2,0,2,2,1,2,0,0],
+ n:{zh:'微囊悬浮-悬乳剂',en:'Mixed CS + SE',ms:'Campuran ampaian kapsul + suspo-emulsi'},
+ state:{zh:'微囊 + 固体颗粒 + 油滴，三相同在水中',en:'Capsules, solid particles and oil droplets: three phases in water',ms:'Kapsul, zarah pepejal dan titisan minyak: tiga fasa dalam air'},
+ pro:{zh:['一瓶最多可装三种性质不同的有效成分'],en:['Up to three actives of different nature in one bottle'],ms:['Sehingga tiga bahan aktif berbeza sifat dalam satu botol']},
+ con:{zh:['所有剂型中最难稳定','储存寿命最短','价格最高','少见'],en:['Hardest of all types to stabilise','Shortest shelf life','Most expensive','Rare'],ms:['Paling sukar distabilkan antara semua jenis','Hayat simpan paling pendek','Paling mahal','Jarang']},
+ store:{zh:'避热，买回尽快用',en:'Avoid heat, use soon after purchase',ms:'Elak panas, guna segera selepas beli'},
+ safe:{zh:'与 SE 相近',en:'Similar to SE',ms:'Serupa dengan SE'},
+ ex:{zh:'三组分复配产品',en:'three-way premixes',ms:'campuran tiga bahan'},
+ use:{zh:'专用复配',en:'Specialist premixes',ms:'Campuran khusus'}},
+{c:'EO',drone:1,avail:0,phase:'L',dilute:'emu',agit:1,spray:1,ai:['oil'],fam:'emu',load:'50–300 g/L',
+ score:[3,2,3,1,1,1,1,1,3,1,0],
+ n:{zh:'油乳剂（油包水）',en:'Emulsion, water in oil',ms:'Emulsi air dalam minyak'},
+ state:{zh:'水滴分散在油里，油是连续相（与 EW 相反）',en:'Water droplets dispersed in oil; oil is the continuous phase (the reverse of EW)',ms:'Titisan air tersebar dalam minyak; minyak fasa berterusan (terbalik daripada EW)'},
+ pro:{zh:['油相包住水，雾滴大、飘移少、蒸发慢','耐雨，附着好'],en:['Oil outside: larger droplets, less drift, slower evaporation','Rainfast, sticks well'],ms:['Minyak di luar: titisan besar, kurang hanyut, sejat perlahan','Tahan hujan, melekat baik']},
+ con:{zh:['黏稠，量取和清洗困难','兑水时需要"反相"成 EW，搅拌不足会结油块','油量高，药害风险高','少见，多用于特殊喷雾'],en:['Viscous: hard to measure and rinse','Must invert to an EW on dilution; poor agitation leaves oil lumps','High oil content, high phytotoxicity risk','Uncommon; mostly for specialist spraying'],ms:['Pekat: sukar disukat dan dibilas','Mesti terbalik menjadi EW bila dicairkan; kacauan lemah tinggalkan ketulan minyak','Kandungan minyak tinggi, risiko fitotoksik tinggi','Jarang; kebanyakannya untuk semburan khusus']},
+ store:{zh:'避热避冻',en:'Avoid heat and frost',ms:'Elak panas dan beku'},
+ safe:{zh:'油和溶剂经皮吸收',en:'Oil and solvent absorb through skin',ms:'Minyak dan pelarut diserap kulit'},
+ ex:{zh:'部分抗飘移除草剂、林业制剂',en:'some anti-drift herbicides, forestry products',ms:'sesetengah racun rumpai anti-hanyut, produk perhutanan'},
+ use:{zh:'需要减少飘移的场合',en:'Where drift must be minimised',ms:'Di mana hanyutan mesti dikurangkan'}},
+{c:'EG',drone:1,avail:0,phase:'S',dilute:'emu',agit:1,spray:1,ai:['oil'],fam:'emu',load:'10–50 %',
+ score:[3,1,3,3,3,1,3,2,3,1,0],
+ n:{zh:'乳粒剂',en:'Emulsifiable granule',ms:'Butiran boleh emulsi'},
+ state:{zh:'油溶性有效成分吸附在可溶载体颗粒上，兑水后载体溶解、油乳化',en:'Oil-soluble active held on a soluble carrier granule; in water the carrier dissolves and the oil emulsifies',ms:'Bahan aktif larut minyak dipegang pada butiran pembawa larut; dalam air pembawa larut dan minyak teremulsi'},
+ pro:{zh:['EC 的吸收和耐雨，却没有液体溶剂','干剂型：无粉尘、耐热、包装轻','量取像倒沙子'],en:['EC uptake and rainfastness without liquid solvent','Dry type: dust-free, heat-stable, light packaging','Pours like sand'],ms:['Serapan dan ketahanan hujan EC tanpa pelarut cecair','Jenis kering: tiada habuk, tahan panas, bungkusan ringan','Tuang seperti pasir']},
+ con:{zh:['颗粒要时间和搅拌才溶解乳化','含量低','技术要求高，产品少、价格高'],en:['Granules need time and agitation to dissolve and emulsify','Low loading','Hard to make: few products, expensive'],ms:['Butiran perlu masa dan kacauan untuk larut dan teremulsi','Kandungan rendah','Sukar dibuat: produk sedikit, mahal']},
+ store:{zh:'干燥密封，最耐放',en:'Dry and sealed; keeps very well',ms:'Kering dan tertutup; sangat tahan simpan'},
+ safe:{zh:'固体乳类中最安全',en:'Safest of the emulsion family',ms:'Paling selamat dalam keluarga emulsi'},
+ ex:{zh:'部分菊酯类、除草剂',en:'some pyrethroids and herbicides',ms:'sesetengah piretroid dan racun rumpai'},
+ use:{zh:'热带仓储下要 EC 效果',en:'EC performance under tropical storage',ms:'Prestasi EC dalam simpanan tropika'}},
+{c:'EP',drone:0,avail:0,phase:'S',dilute:'emu',agit:1,spray:1,ai:['oil'],fam:'emu',load:'10–50 %',
+ score:[3,1,3,1,3,1,1,2,3,2,0],
+ n:{zh:'乳粉剂',en:'Emulsifiable powder',ms:'Serbuk boleh emulsi'},
+ state:{zh:'与 EG 相同原理，但是粉末不是颗粒',en:'Same principle as EG, but a powder rather than granules',ms:'Prinsip sama seperti EG, tetapi serbuk bukan butiran'},
+ pro:{zh:['无液体溶剂，耐热耐放','兑水后乳化，吸收快'],en:['No liquid solvent, heat-stable','Emulsifies in water, fast uptake'],ms:['Tiada pelarut cecair, tahan panas','Teremulsi dalam air, serapan cepat']},
+ con:{zh:['量取有粉尘','水面易结团，先调糊','少见'],en:['Dust when measuring','Crusts on water: pre-slurry','Rare'],ms:['Habuk semasa menyukat','Berkerak atas air: buat bubur dahulu','Jarang']},
+ store:{zh:'干燥密封',en:'Dry and sealed',ms:'Kering dan tertutup'},
+ safe:{zh:'粉尘风险',en:'Dust risk',ms:'Risiko habuk'},
+ ex:{zh:'少数专用产品',en:'a few specialist products',ms:'beberapa produk khusus'},
+ use:{zh:'EG 的粉末版',en:'Powder version of EG',ms:'Versi serbuk EG'}},
+{c:'ES',drone:0,avail:1,phase:'L',dilute:'emu',agit:1,spray:0,ai:['oil'],fam:'emu',load:'50–300 g/L',
+ score:[0,0,0,0,0,0,0,0,0,0,1],
+ n:{zh:'种子处理乳剂',en:'Emulsion for seed treatment',ms:'Emulsi rawatan benih'},
+ state:{zh:'EW 型，加入染料和成膜剂，用于拌种',en:'An EW with dye and film-former added, for coating seed',ms:'EW dengan pewarna dan pembentuk filem, untuk menyaluti benih'},
+ pro:{zh:['均匀包裹种子，颜色标示已处理'],en:['Coats seed evenly; colour marks treated seed'],ms:['Menyaluti benih sekata; warna menandakan benih dirawat']},
+ con:{zh:['不用于喷雾','榴莲等果树很少用'],en:['Not for spraying','Rarely used on tree fruit'],ms:['Bukan untuk semburan','Jarang untuk pokok buah']},
+ store:{zh:'避热避冻',en:'Avoid heat and frost',ms:'Elak panas dan beku'},
+ safe:{zh:'处理过的种子不可食用或喂饲',en:'Treated seed must never be eaten or fed',ms:'Benih dirawat tidak boleh dimakan atau diberi makan'},
+ ex:{zh:'种子处理杀虫、杀菌剂',en:'seed-treatment insecticides and fungicides',ms:'racun serangga dan kulat rawatan benih'},
+ use:{zh:'播种前拌种',en:'Seed dressing before sowing',ms:'Rawatan benih sebelum menyemai'}},
+{c:'OL',drone:2,avail:1,phase:'L',dilute:'oil',agit:0,spray:0,ai:['oil'],fam:'oil',load:'20–500 g/L',
+ score:[0,0,0,0,0,0,0,0,0,0,1],
+ n:{zh:'油剂',en:'Oil-miscible liquid',ms:'Cecair boleh campur minyak'},
+ state:{zh:'溶在油里，用油稀释（不是水），供烟雾机或超低容量喷雾',en:'Dissolved in oil, diluted with oil (not water), for foggers or ULV sprayers',ms:'Larut dalam minyak, dicairkan dengan minyak (bukan air), untuk mesin kabus atau penyembur ULV'},
+ pro:{zh:['雾滴细、覆盖广，适合烟雾机','无水，蒸发慢'],en:['Fine droplets, wide coverage: suits foggers','No water, slow evaporation'],ms:['Titisan halus, liputan luas: sesuai mesin kabus','Tiada air, sejat perlahan']},
+ con:{zh:['不能加水','油量高，果树叶面药害风险高','需专用机具'],en:['Cannot be mixed with water','High oil load, phytotoxicity risk on fruit-tree foliage','Needs dedicated equipment'],ms:['Tak boleh dicampur air','Minyak tinggi, risiko fitotoksik pada daun pokok buah','Perlu peralatan khusus']},
+ store:{zh:'远离火源',en:'Away from flame',ms:'Jauh dari api'},
+ safe:{zh:'吸入细雾风险高',en:'High inhalation risk from fine mist',ms:'Risiko sedutan tinggi daripada kabus halus'},
+ ex:{zh:'烟雾机用杀虫剂',en:'fogging insecticides',ms:'racun serangga kabus'},
+ use:{zh:'烟雾机、仓库、蚊虫',en:'Foggers, stores, public health',ms:'Mesin kabus, stor, kesihatan awam'}},
+{c:'OF',drone:3,avail:0,phase:'L',dilute:'oil',agit:2,spray:0,ai:['solid'],fam:'oil',load:'100–500 g/L',
+ score:[0,0,0,0,0,0,0,0,0,0,0],
+ n:{zh:'油悬浮剂（油稀释）',en:'Oil-miscible flowable',ms:'Ampaian boleh campur minyak'},
+ state:{zh:'固体颗粒悬在油里，用油稀释；和 OD 不同，OD 是兑水的',en:'Solid particles suspended in oil, diluted with oil; unlike OD, which goes into water',ms:'Zarah pepejal terampai dalam minyak, dicairkan dengan minyak; tidak seperti OD yang masuk air'},
+ pro:{zh:['固体成分也能用超低容量喷雾'],en:['Lets solid actives be applied by ULV'],ms:['Membolehkan bahan aktif pepejal disembur secara ULV']},
+ con:{zh:['不能加水','沉降、结块问题同 SC','少见'],en:['Cannot be mixed with water','Same settling and caking problems as SC','Rare'],ms:['Tak boleh dicampur air','Masalah mendap dan mengeras sama seperti SC','Jarang']},
+ store:{zh:'避热，摇匀',en:'Avoid heat, shake',ms:'Elak panas, goncang'},
+ safe:{zh:'同 OL',en:'As OL',ms:'Seperti OL'},
+ ex:{zh:'超低容量专用产品',en:'ULV-specific products',ms:'produk khusus ULV'},
+ use:{zh:'超低容量喷雾',en:'ULV spraying',ms:'Semburan ULV'}},
+{c:'UL',drone:3,avail:1,phase:'L',dilute:'oil',agit:0,spray:0,ai:['oil'],fam:'oil',load:'20–300 g/L',
+ score:[0,0,0,0,0,0,0,0,0,0,1],
+ n:{zh:'超低容量液剂',en:'Ultra-low volume liquid',ms:'Cecair isipadu ultra rendah'},
+ state:{zh:'出厂即可用，不稀释，用专用超低容量喷头',en:'Ready to use undiluted through ULV nozzles',ms:'Sedia guna tanpa cairan melalui muncung ULV'},
+ pro:{zh:['不用带水上山，每英亩只需 0.5–2 升','雾滴极细，飞机或机动喷雾常用'],en:['No water to carry: 0.5–2 L per acre','Very fine droplets; used by aircraft and motorised sprayers'],ms:['Tak perlu bawa air: 0.5–2 L seekar','Titisan sangat halus; digunakan pesawat dan penyembur bermotor']},
+ con:{zh:['飘移严重，风大不能喷','雾滴细，操作者吸入风险高','需专用设备和校准'],en:['Drifts badly; cannot spray in wind','Fine mist: high inhalation risk','Needs dedicated, calibrated equipment'],ms:['Hanyut teruk; tak boleh sembur bila berangin','Kabus halus: risiko sedutan tinggi','Perlu peralatan khusus yang ditentukur']},
+ store:{zh:'远离火源',en:'Away from flame',ms:'Jauh dari api'},
+ safe:{zh:'全套防护，尤其呼吸',en:'Full PPE, especially respiratory',ms:'PPE penuh, terutama pernafasan'},
+ ex:{zh:'蝗虫、蚊虫防治，大面积作物',en:'locust and mosquito control, broadacre crops',ms:'kawalan belalang dan nyamuk, tanaman luas'},
+ use:{zh:'大面积、缺水地区',en:'Large areas, water-scarce sites',ms:'Kawasan luas, tapak kekurangan air'}},
+{c:'SL',drone:2,avail:3,phase:'L',dilute:'sol',agit:0,spray:1,ai:['water'],load:'100–500 g/L',
+ score:[2,1,1,2,3,2,3,3,3,3,3],
+ n:{zh:'水剂 / 可溶液剂',en:'Soluble liquid',ms:'Cecair larut'},
+ state:{zh:'直接溶在水里，真溶液，透明',en:'Dissolved in water, a true solution, clear',ms:'Larut dalam air, larutan sebenar, jernih'},
+ pro:{zh:['不沉淀、不分层、不需搅拌','无溶剂无粉尘','量取简单，喷雾器不磨损','储存最稳定的液体剂型'],en:['No settling, no separation, no agitation','No solvent, no dust','Simple to measure, no nozzle wear','Most storage-stable liquid type'],ms:['Tiada mendapan, tiada pemisahan, tak perlu kacau','Tiada pelarut, tiada habuk','Mudah disukat, tiada haus muncung','Cecair paling stabil disimpan']},
+ con:{zh:['只有水溶性有效成分能做','雨水一冲就掉，不耐雨','水溶性成分易在土壤中移动'],en:['Only for water-soluble actives','Washes off in rain','Water-soluble actives move readily in soil'],ms:['Hanya untuk bahan aktif larut air','Hanyut bila hujan','Bahan aktif larut air mudah bergerak dalam tanah']},
+ store:{zh:'常温，防冻',en:'Ambient, protect from frost',ms:'Suhu bilik, elak beku'},
+ safe:{zh:'看有效成分本身；剂型本身温和',en:'Depends on the active; the type itself is mild',ms:'Bergantung pada bahan aktif; jenisnya sendiri lembut'},
+ ex:{zh:'草甘膦、草铵膦、2,4-D 胺盐、啶虫脒',en:'glyphosate, glufosinate, 2,4-D amine, acetamiprid',ms:'glifosat, glufosinat, 2,4-D amina, asetamiprid'},
+ use:{zh:'除草剂、内吸性水溶成分',en:'Herbicides, systemic water-soluble actives',ms:'Racun rumpai, bahan aktif sistemik larut air'}},
+{c:'DC',drone:1,avail:1,phase:'L',fam:'emu',dilute:'sus',agit:1,spray:1,ai:['oil'],load:'50–300 g/L',
+ score:[3,1,2,1,2,1,3,2,3,2,1],
+ n:{zh:'可分散液剂',en:'Dispersible concentrate',ms:'Pekatan boleh sebar'},
+ state:{zh:'溶在与水互溶的溶剂里，兑水后析出极细颗粒',en:'Dissolved in a water-miscible solvent; on dilution it precipitates as very fine particles',ms:'Larut dalam pelarut bercampur air; bila dicairkan ia memendak sebagai zarah sangat halus'},
+ pro:{zh:['颗粒比 SC 细得多，吸收快','储存稳定（是真溶液）'],en:['Far finer particles than SC: fast uptake','Stable in storage (true solution in the bottle)'],ms:['Zarah jauh lebih halus daripada SC: serapan cepat','Stabil dalam simpanan (larutan sebenar dalam botol)']},
+ con:{zh:['溶剂量高','兑水后颗粒会慢慢长大，配好要尽快喷','药害风险类似 EC'],en:['High solvent content','Particles grow after dilution: spray promptly','Phytotoxicity risk similar to EC'],ms:['Pelarut tinggi','Zarah membesar selepas dicairkan: sembur segera','Risiko fitotoksik seperti EC']},
+ store:{zh:'常温阴凉',en:'Cool ambient',ms:'Suhu bilik sejuk'},
+ safe:{zh:'与 EC 相近',en:'Similar to EC',ms:'Serupa dengan EC'},
+ ex:{zh:'部分三唑类、氟啶虫酰胺',en:'some azoles, flonicamid',ms:'sesetengah azol, flonikamid'},
+ use:{zh:'少见；专用产品',en:'Uncommon; specialist products',ms:'Jarang; produk khusus'}},
+{c:'WP',drone:0,avail:3,phase:'S',dilute:'sus',agit:3,spray:1,ai:['solid'],load:'25–80 %',
+ score:[1,3,1,1,3,3,1,0,1,3,3],
+ n:{zh:'可湿性粉剂',en:'Wettable powder',ms:'Serbuk boleh basah'},
+ state:{zh:'固体研磨后与惰性载体、润湿剂、分散剂混合成细粉',en:'Solid milled and blended with inert carrier, wetter and dispersant into a fine powder',ms:'Pepejal dikisar dan dicampur pembawa lengai, pembasah dan penyebar menjadi serbuk halus'},
+ pro:{zh:['无溶剂，药害风险低','含量高、价格低','干粉最耐高温储存，多年不坏','叶面保护层厚，持效好'],en:['No solvent, low phytotoxicity','High loading, cheap','Dry powder keeps for years even in heat','Thick protective deposit, good residual'],ms:['Tiada pelarut, fitotoksik rendah','Kandungan tinggi, murah','Serbuk kering tahan bertahun-tahun walaupun panas','Lapisan pelindung tebal, kesan tahan lama']},
+ con:{zh:['量取时扬起粉尘，吸入风险高','颗粒粗（5–20 微米），沉降快，喷雾全程要强力搅拌','磨损泵和喷头','水面浮粉结团，需先调成糊','叶面白色残留明显','吸收慢，几乎不耐雨'],en:['Dust when measuring: high inhalation risk','Coarse particles (5–20 µm) settle fast: strong agitation throughout','Abrasive to pumps and nozzles','Floats and crusts on water: make a slurry first','Visible white residue on leaves','Slow uptake, poor rainfastness'],ms:['Habuk semasa menyukat: risiko sedutan tinggi','Zarah kasar (5–20 µm) mendap cepat: kacauan kuat sepanjang masa','Menghauskan pam dan muncung','Terapung dan berkerak atas air: buat bubur dahulu','Sisa putih jelas pada daun','Serapan perlahan, tak tahan hujan']},
+ store:{zh:'干燥密封；受潮结块后不再分散',en:'Dry and sealed; once damp and lumpy it will not disperse',ms:'Kering dan tertutup; setelah lembap dan berketul ia tidak sebar lagi'},
+ safe:{zh:'粉尘是主要风险；戴口罩量取，先调糊再倒入桶',en:'Dust is the main risk; mask when measuring, pre-slurry before adding',ms:'Habuk risiko utama; pakai topeng bila menyukat, buat bubur dahulu'},
+ ex:{zh:'代森锰锌、铜制剂、硫磺、多菌灵',en:'mancozeb, copper, sulphur, carbendazim',ms:'mankozeb, kuprum, sulfur, karbendazim'},
+ use:{zh:'保护性杀菌剂、经济型、耐储',en:'Protectant fungicides, budget, long storage',ms:'Racun kulat pelindung, bajet, simpanan lama'}},
+{c:'WG',drone:1,avail:3,phase:'S',dilute:'sus',agit:2,spray:1,ai:['solid'],load:'25–90 %',
+ score:[1,3,2,3,3,3,3,1,2,2,3],
+ n:{zh:'水分散粒剂',en:'Water dispersible granule',ms:'Butiran boleh sebar air'},
+ state:{zh:'WP 造粒成小颗粒，兑水后散回细粉',en:'A WP granulated into small pellets that break back into fine powder in water',ms:'WP dibutirkan menjadi butiran kecil yang pecah kembali menjadi serbuk halus dalam air'},
+ pro:{zh:['无粉尘，量取像倒沙子','干剂型，耐热耐放','无溶剂，药害低','包装小、运费低','是 WP 的现代替代'],en:['Dust-free, pours like sand','Dry type: heat-tolerant, long shelf life','No solvent, low phytotoxicity','Compact packaging, low freight','Modern replacement for WP'],ms:['Tiada habuk, tuang seperti pasir','Jenis kering: tahan panas, hayat simpan panjang','Tiada pelarut, fitotoksik rendah','Bungkusan padat, kos angkut rendah','Pengganti moden WP']},
+ con:{zh:['价格高于 WP','颗粒需要时间和搅拌才散开；劣质品散不开会堵喷头','硬水影响分散','吸收慢'],en:['Costs more than WP','Granules need time and agitation to disperse; poor ones block nozzles','Hard water hinders dispersion','Slow uptake'],ms:['Lebih mahal daripada WP','Butiran perlu masa dan kacauan untuk sebar; yang buruk menyumbat muncung','Air keras menghalang penyebaran','Serapan perlahan']},
+ store:{zh:'干燥密封，最耐放的剂型之一',en:'Dry and sealed; one of the most durable types',ms:'Kering dan tertutup; antara paling tahan lama'},
+ safe:{zh:'固体剂型中最安全',en:'Safest of the solid types',ms:'Paling selamat antara jenis pepejal'},
+ ex:{zh:'代森锰锌、嘧菌酯、噻虫嗪、乙螨唑',en:'mancozeb, azoxystrobin, thiamethoxam, etoxazole',ms:'mankozeb, azoksistrobin, tiametoksam, etoksazol'},
+ use:{zh:'预防性喷雾、热带仓储、安全优先',en:'Preventive sprays, tropical storage, safety-first',ms:'Semburan pencegahan, simpanan tropika, utamakan keselamatan'}},
+{c:'SP',drone:1,avail:2,phase:'S',dilute:'sol',agit:0,spray:1,ai:['water'],load:'50–95 %',
+ score:[2,1,1,1,3,2,1,3,3,3,2],
+ n:{zh:'可溶粉剂',en:'Soluble powder',ms:'Serbuk larut'},
+ state:{zh:'水溶性固体，兑水完全溶解成透明溶液',en:'Water-soluble solid that dissolves completely into a clear solution',ms:'Pepejal larut air yang larut sepenuhnya menjadi larutan jernih'},
+ pro:{zh:['溶解后不需搅拌、不磨损','含量极高，包装轻','干粉耐放'],en:['No agitation or wear once dissolved','Very high loading, light packaging','Dry powder keeps well'],ms:['Tak perlu kacau atau haus setelah larut','Kandungan sangat tinggi, bungkusan ringan','Serbuk kering tahan simpan']},
+ con:{zh:['量取有粉尘','只限水溶性有效成分','不耐雨'],en:['Dust when measuring','Only water-soluble actives','Not rainfast'],ms:['Habuk semasa menyukat','Hanya bahan aktif larut air','Tak tahan hujan']},
+ store:{zh:'干燥密封，吸潮会结块',en:'Dry and sealed; absorbs moisture and cakes',ms:'Kering dan tertutup; menyerap lembapan dan mengeras'},
+ safe:{zh:'粉尘风险；看有效成分',en:'Dust risk; depends on the active',ms:'Risiko habuk; bergantung pada bahan aktif'},
+ ex:{zh:'乙酰甲胺磷、杀虫单',en:'acephate, monosultap',ms:'asefat, monosultap'},
+ use:{zh:'水溶性杀虫剂',en:'Water-soluble insecticides',ms:'Racun serangga larut air'}},
+{c:'SG',drone:1,avail:1,phase:'S',dilute:'sol',agit:0,spray:1,ai:['water'],load:'50–95 %',
+ score:[2,1,1,3,3,2,3,3,3,2,1],
+ n:{zh:'可溶粒剂',en:'Soluble granule',ms:'Butiran larut'},
+ state:{zh:'SP 造粒，无粉尘，溶解成透明溶液',en:'An SP granulated dust-free; dissolves into a clear solution',ms:'SP dibutirkan tanpa habuk; larut menjadi larutan jernih'},
+ pro:{zh:['SP 的优点加上无粉尘','量取像倒沙子'],en:['SP benefits plus no dust','Pours like sand'],ms:['Kelebihan SP tanpa habuk','Tuang seperti pasir']},
+ con:{zh:['溶解比 SP 稍慢','只限水溶性有效成分','不耐雨'],en:['Dissolves slightly slower than SP','Only water-soluble actives','Not rainfast'],ms:['Larut sedikit lebih perlahan daripada SP','Hanya bahan aktif larut air','Tak tahan hujan']},
+ store:{zh:'干燥密封',en:'Dry and sealed',ms:'Kering dan tertutup'},
+ safe:{zh:'固体中最温和',en:'Mildest of the solids',ms:'Paling lembut antara pepejal'},
+ ex:{zh:'草铵膦、噻虫嗪（部分产品）',en:'glufosinate, thiamethoxam (some products)',ms:'glufosinat, tiametoksam (sesetengah produk)'},
+ use:{zh:'水溶性成分的无尘版本',en:'Dust-free form of water-soluble actives',ms:'Bentuk tanpa habuk bagi bahan aktif larut air'}},
+{c:'DP',drone:0,avail:2,phase:'S',dilute:'dry',agit:0,spray:0,ai:['solid','oil'],load:'1–10 %',
+ score:[0,2,0,0,3,3,1,3,3,3,2],
+ n:{zh:'粉剂',en:'Dustable powder',ms:'Serbuk debu'},
+ state:{zh:'低含量细粉，直接撒施，不兑水',en:'Low-loading fine powder applied dry, no water',ms:'Serbuk halus kandungan rendah, ditabur kering, tanpa air'},
+ pro:{zh:['不需要水和喷雾器','对缝隙、储粮、伤口有用'],en:['No water or sprayer needed','Useful in crevices, stored grain, on wounds'],ms:['Tak perlu air atau penyembur','Berguna di celah, bijirin simpanan, luka']},
+ con:{zh:['随风飘散，附着差，效果不稳','吸入风险高','用量大，浪费'],en:['Drifts on wind, poor adhesion, unreliable','High inhalation risk','Wasteful, high volume'],ms:['Hanyut angin, lekatan lemah, tak boleh diharap','Risiko sedutan tinggi','Membazir, isipadu tinggi']},
+ store:{zh:'干燥',en:'Dry',ms:'Kering'},
+ safe:{zh:'粉尘暴露最严重的剂型',en:'Worst dust exposure of any type',ms:'Pendedahan habuk paling teruk'},
+ ex:{zh:'硫磺粉、储粮防虫粉',en:'sulphur dust, grain protectants',ms:'debu sulfur, pelindung bijirin'},
+ use:{zh:'不用于树冠喷雾',en:'Not for canopy spraying',ms:'Bukan untuk semburan kanopi'}},
+{c:'GR',drone:0,avail:2,phase:'S',dilute:'dry',agit:0,spray:0,ai:['solid','oil'],load:'2–20 %',
+ score:[1,3,3,3,3,3,2,3,3,2,2],
+ n:{zh:'颗粒剂',en:'Granule',ms:'Butiran'},
+ state:{zh:'有效成分附在或包在 0.3–2 毫米颗粒上，撒施于土壤',en:'Active coated on or inside 0.3–2 mm granules, broadcast on soil',ms:'Bahan aktif disaluti atau di dalam butiran 0.3–2 mm, ditabur di tanah'},
+ pro:{zh:['不需要水，无粉尘无飘移','缓释，土壤中持效长','根部吸收的内吸产品最适合'],en:['No water, no dust, no drift','Slow release, long soil residual','Ideal for systemic actives taken up by roots'],ms:['Tak perlu air, tiada habuk, tiada hanyut','Pelepasan perlahan, kesan tanah tahan lama','Sesuai bahan aktif sistemik yang diserap akar']},
+ con:{zh:['起效慢，靠雨水或灌溉激活','对叶面害虫无直接作用','鸟类和儿童误食风险'],en:['Slow to act, needs rain or irrigation to activate','No direct action on foliar pests','Risk of birds and children eating it'],ms:['Lambat bertindak, perlu hujan atau pengairan','Tiada tindakan terus pada perosak daun','Risiko burung dan kanak-kanak memakannya']},
+ store:{zh:'干燥密封',en:'Dry and sealed',ms:'Kering dan tertutup'},
+ safe:{zh:'操作安全，但撒后要盖土',en:'Safe to handle, but cover with soil after applying',ms:'Selamat dikendali, tetapi tutup dengan tanah selepas tabur'},
+ ex:{zh:'克百威、噻虫嗪颗粒',en:'carbofuran, thiamethoxam granules',ms:'karbofuran, butiran tiametoksam'},
+ use:{zh:'土壤处理、幼树根施',en:'Soil treatment, young-tree root zone',ms:'Rawatan tanah, zon akar pokok muda'}}
+];
+
+
+const ACT=[
+ {id:'cu',n:{zh:'铜制剂',en:'copper',ms:'kuprum'},tags:['metal','cu']},
+ {id:'mz',n:{zh:'代森锰锌',en:'mancozeb',ms:'mankozeb'},tags:['metal','alk']},
+ {id:'pb',n:{zh:'丙森锌',en:'propineb',ms:'propineb'},tags:['metal','alk']},
+ {id:'ct',n:{zh:'百菌清',en:'chlorothalonil',ms:'klorotalonil'},tags:['nooil']},
+ {id:'su',n:{zh:'硫磺',en:'sulphur',ms:'sulfur'},tags:['nooil','heat']},
+ {id:'cp',n:{zh:'克菌丹',en:'captan',ms:'kaptan'},tags:['alk','nooil','captan']},
+ {id:'ph',n:{zh:'亚磷酸盐 / 磷酸盐类',en:'phosphite / phosphonate',ms:'fosfit / fosfonat'},tags:['phos']},
+ {id:'fo',n:{zh:'三乙膦酸铝',en:'fosetyl-Al',ms:'fosetil-Al'},tags:['phos']},
+ {id:'ml',n:{zh:'甲霜灵',en:'metalaxyl',ms:'metalaksil'},tags:[]},
+ {id:'az',n:{zh:'三唑类（戊唑醇、苯醚甲环唑）',en:'triazoles (tebuconazole, difenoconazole)',ms:'triazol (tebukonazol, difenokonazol)'},tags:[]},
+ {id:'st',n:{zh:'甲氧基丙烯酸酯类（嘧菌酯）',en:'strobilurins (azoxystrobin)',ms:'strobilurin (azoksistrobin)'},tags:[]},
+ {id:'ab',n:{zh:'阿维菌素 / 甲维盐',en:'abamectin / emamectin',ms:'abamektin / emamektin'},tags:['alk']},
+ {id:'cl',n:{zh:'毒死蜱',en:'chlorpyrifos',ms:'klorpirifos'},tags:['alk']},
+ {id:'py',n:{zh:'菊酯类',en:'pyrethroids',ms:'piretroid'},tags:[]},
+ {id:'ne',n:{zh:'新烟碱类（吡虫啉、噻虫嗪）',en:'neonicotinoids (imidacloprid, thiamethoxam)',ms:'neonikotinoid (imidakloprid, tiametoksam)'},tags:[]},
+ {id:'sp',n:{zh:'多杀菌素类',en:'spinosyns (spinetoram)',ms:'spinosin (spinetoram)'},tags:[]},
+];
+
+/* ---------- jar glyphs ---------- */
+function jar(type,size){
+  const s=size||46;
+  let inner='';
+  if(type==='sol') inner='<rect x="14" y="30" width="28" height="30" rx="4" fill="#dceef2"/>';
+  else if(type==='emu') inner='<rect x="14" y="30" width="28" height="30" rx="4" fill="#f5eee0"/><circle cx="22" cy="36" r="2.5" fill="#c98a1b"/><circle cx="34" cy="38" r="3" fill="#c98a1b"/><circle cx="27" cy="46" r="2" fill="#c98a1b"/><circle cx="36" cy="50" r="2.5" fill="#c98a1b"/><circle cx="20" cy="54" r="2" fill="#c98a1b"/>';
+  else if(type==='sus') inner='<rect x="14" y="30" width="28" height="30" rx="4" fill="#e6e3da"/><rect x="14" y="50" width="28" height="10" rx="3" fill="#8a8578"/><circle cx="22" cy="38" r="1.5" fill="#8a8578"/><circle cx="33" cy="42" r="1.5" fill="#8a8578"/><circle cx="27" cy="45" r="1.2" fill="#8a8578"/>';
+  else if(type==='oil') inner='<rect x="14" y="30" width="28" height="30" rx="4" fill="#f2d99a"/><rect x="14" y="30" width="28" height="8" rx="3" fill="#e8c46a"/>';
+  else inner='<circle cx="22" cy="40" r="3" fill="#8a8578"/><circle cx="33" cy="46" r="3" fill="#8a8578"/><circle cx="26" cy="52" r="3" fill="#8a8578"/><circle cx="36" cy="36" r="2.5" fill="#8a8578"/>';
+  return `<svg width="${s}" height="${s}" viewBox="0 0 56 64" aria-hidden="true"><rect x="10" y="26" width="36" height="36" rx="6" fill="#fff" stroke="#c8d2cf" stroke-width="2"/><rect x="18" y="14" width="20" height="12" rx="2" fill="#fff" stroke="#c8d2cf" stroke-width="2"/><rect x="16" y="8" width="24" height="8" rx="2" fill="#1b5e6e"/>${inner}</svg>`;
+}
+const JAR3 = {zh:['溶液','乳液','悬浮液'],en:['Solution','Emulsion','Suspension'],ms:['Larutan','Emulsi','Ampaian']};
+
+/* ---------- text size ---------- */
+const APP_VER='v60';
+const SIZES=[18,20,22]; const SIZE_LABEL=['Aa','Aa+','Aa++'];
+function applySize(){ const i=+(localStorage.getItem('fx_size')||0); document.documentElement.style.fontSize=SIZES[i]+'px'; document.documentElement.classList.toggle('xl',i===2); const b=document.getElementById('sizeBtn'); if(b) b.textContent=SIZE_LABEL[i]; }
+function cycleSize(){ const i=(+(localStorage.getItem('fx_size')||0)+1)%SIZES.length; localStorage.setItem('fx_size',i); applySize(); }
+applySize();
+/* ---------- state ---------- */
+let lang = localStorage.getItem('fx_lang') || '';
+let libFilter = 'all'; let libQ='';
+const LANG_LABEL = {zh:'中文',en:'EN',ms:'BM'};
+const ORDER = ['zh','en','ms'];
+
+function t(k){ return L[lang][k]; }
+function setLang(l,fromPick){
+  lang=l; localStorage.setItem('fx_lang',l);
+  document.documentElement.lang = l==='zh'?'zh':l;
+  document.getElementById('langPick').classList.remove('on');
+  document.getElementById('langBtn').textContent = LANG_LABEL[l];
+  document.getElementById('title').textContent = L[l].appTitle;
+  document.title = L[l].appTitle;
+  renderAll();
+}
+function cycleLang(){ setLang(ORDER[(ORDER.indexOf(lang)+1)%3]); }
+function show(v){
+  document.querySelectorAll('.view').forEach(e=>e.classList.toggle('on',e.id==='v-'+v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  window.scrollTo(0,0);
+}
+
+/* ---------- render ---------- */
+function renderAll(){
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  renderLib(); renderPickForm(); renderPick(); renderMixForm(); renderActForm(); renderMix(); renderSci();
+}
+
+function renderLib(){
+  const fs=[['all','fAll'],['L','fLiq'],['S','fSol'],['spray','fSpray'],['emu','fEmu'],['cap','fCap']];
+  document.getElementById('libFilters').innerHTML = fs.map(([v,k])=>`<button type="button" class="${libFilter===v?'on':''}" onclick="libFilter='${v}';renderLib()">${t(k)}</button>`).join('');
+  document.getElementById('libSearch').placeholder=t('search');
+  const q=libQ.trim().toLowerCase();
+  const list = F.filter(f=> (!q || f.c.toLowerCase().includes(q) || f.n[lang].toLowerCase().includes(q) || f.n.en.toLowerCase().includes(q)) && (libFilter==='all' || (libFilter==='spray'?f.spray:libFilter==='emu'?f.fam==='emu':libFilter==='cap'?(f.fam==='cap'||f.c==='ZW'||f.c==='ZE'):f.phase===libFilter)));
+  const exact = q && F.find(f=>f.c.toLowerCase()===q);
+  const wasOpen=new Set([...document.querySelectorAll('#libList .card.open')].map(e=>e.id));
+  const dil={sol:{zh:'透明溶液',en:'clear solution',ms:'larutan jernih'},emu:{zh:'乳白乳液',en:'milky emulsion',ms:'emulsi putih susu'},sus:{zh:'混浊悬浮液',en:'cloudy suspension',ms:'ampaian keruh'},dry:{zh:'不兑水，直接施用',en:'applied dry, no water',ms:'ditabur kering, tanpa air'},oil:{zh:'用油稀释或不稀释，不加水',en:'diluted in oil or used neat, not water',ms:'dicairkan dalam minyak atau digunakan pekat, bukan air'}};
+  const ptag = {L:{zh:'液体',en:'liquid',ms:'cecair'},S:{zh:'固体',en:'solid',ms:'pepejal'}};
+  const GRP=[['emu',['EC','EW','ME','EO','SE','DC','EG','EP','ES']],['sus',['SC','OD','WP','WG']],['cap',['CS','ZC','ZW','ZE']],['sol',['SL','SP','SG']],['ulv',['OL','OF','UL']],['dry',['DP','GR']]];
+  const card=(f)=>`
+  <div class="card ${(exact&&exact.c===f.c)||wasOpen.has('card-'+f.c)?'open':''}" id="card-${f.c}">
+    <button class="head" onclick="this.parentElement.classList.toggle('open')">
+      <span class="jar">${jar(f.dilute)}</span>
+      <span class="t"><div class="code">${f.c}<em>${f.n[lang]}</em></div><div class="sub">${f.state[lang]}</div></span>
+      <span class="chev">›</span>
+    </button>
+    <div class="body">
+      <div class="row" style="grid-template-columns:1fr"><span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><button class="chip ${getCmp().includes(f.c)?'on':''}" onclick="toggleCmp('${f.c}')">${getCmp().includes(f.c)?'✓ '+t('cmp').btnOn:t('cmp').btn}</button></span></div>
+      <div class="row"><span class="k">${t('kDilute')}</span><span><span class="tag ${f.dilute==='emu'||f.dilute==='oil'?'oil':f.dilute==='sol'?'water':'powder'}">${dil[f.dilute][lang]}</span><span class="tag powder">${ptag[f.phase][lang]}</span></span></div>
+      <div class="row"><span class="k">${t('kLoad')}</span><span>${f.load}</span></div>
+      <div class="row"><span class="k">${t('kAgit')}</span><span><span class="dots">${'●'.repeat(f.agit)}${'○'.repeat(3-f.agit)}</span> ${t('agit')[f.agit]}</span></div>
+      <div class="row"><span class="k">${t('kPro')}</span><ul class="pc pro">${f.pro[lang].map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="row"><span class="k">${t('kCon')}</span><ul class="pc con">${f.con[lang].map(x=>`<li>${x}</li>`).join('')}</ul></div>
+      <div class="row"><span class="k">${t('kStore')}</span><span>${f.store[lang]}</span></div>
+      <div class="row"><span class="k">${t('kSafe')}</span><span>${f.safe[lang]}</span></div>
+      <div class="row"><span class="k">${t('kEx')}</span><span>${f.ex[lang]}</span></div>
+      <div class="row"><span class="k">${t('kUse')}</span><span>${f.use[lang]}</span></div>
+      <div class="row"><span class="k">${t('kDrone')}</span><span><span class="dots">${'●'.repeat(f.drone)}${'○'.repeat(3-f.drone)}</span> ${t('droneL')[f.drone]}${t('droneWhy')[f.c]?` — ${t('droneWhy')[f.c]}`:''}</span></div>
+      <div class="row"><span class="k">${t('kAvail')}</span><span><span class="dots">${'●'.repeat(f.avail)}${'○'.repeat(3-f.avail)}</span> ${t('availL')[f.avail]}</span></div>
+    </div>
+  </div>`;
+  const shown=new Set(list.map(f=>f.c));
+  document.getElementById('libList').innerHTML = cmpHTML() + GRP.map(([g,codes])=>{
+    const fs=codes.map(c=>F.find(f=>f.c===c)).filter(f=>f&&shown.has(f.c));
+    return fs.length ? `<div class="grp">${t('grpNames')[g]}</div>`+fs.map(card).join('') : '';
+  }).join('');
+}
+
+function clearPri(){ sessionStorage.setItem('fx_pri','[]'); sessionStorage.removeItem('fx_purpose'); renderPickForm(); renderPick(); }
+function clearMix(){ sessionStorage.removeItem('fx_stage'); sessionStorage.removeItem('fx_mix'); sessionStorage.removeItem('fx_act'); sessionStorage.removeItem('fx_mixq'); renderMixForm(); renderActForm(); renderMix(); }
+function clearCalc(){ sessionStorage.removeItem('fx_calc'); renderSci(); const d=document.getElementById('calcOut').closest('details'); if(d) d.open=true; }
+function getCmp(){ const c=sessionStorage.getItem('fx_cmp'); return c?JSON.parse(c):[]; }
+function toggleCmp(code){ let c=getCmp(); if(c.includes(code)) c=c.filter(x=>x!==code); else { c=[...c,code].slice(-2); } sessionStorage.setItem('fx_cmp',JSON.stringify(c)); const y=window.scrollY; renderLib(); if(c.length===2){ document.querySelector('.cmptable').scrollIntoView({block:'start'}); } else window.scrollTo(0,y); }
+function clearCmp(){ sessionStorage.removeItem('fx_cmp'); renderLib(); }
+function cmpHTML(){
+  const c=getCmp(); const C=t('cmp'); if(!c.length) return '';
+  if(c.length===1) return `<div class="cmpbar"><b>${C.pick1.replace('{a}',c[0])}</b><button class="btn-clear" onclick="clearCmp()">${C.clear}</button></div>`;
+  const A=F.find(f=>f.c===c[0]), B=F.find(f=>f.c===c[1]);
+  const dots=v=>`<span class="dots">${'●'.repeat(v)}${'○'.repeat(3-v)}</span>`;
+  const row=(label,va,vb,ta,tb,hi)=>{ // hi: true = higher better
+    let wa='',wb=''; if(va!==vb&&va!==undefined){ const aBetter=hi?va>vb:va<vb; wa=aBetter?' class="win"':''; wb=aBetter?'':' class="win"'; }
+    return `<tr><td>${label}</td><td${wa}>${ta}</td><td${wb}>${tb}</td></tr>`; };
+  const pri=t('pri'), dil={sol:t('grpNames').sol.split('：')[0],emu:t('grpNames').emu.split('：')[0],sus:t('grpNames').sus.split('：')[0],dry:t('grpNames').dry.split('：')[0],oil:t('grpNames').ulv.split('：')[0]};
+  let rows='';
+  pri.forEach((p,i)=>{ const a=A.score[i], b=B.score[i]; rows+=row(p.split(/[（(]/)[0].trim(),a,b,dots(a),dots(b),true); });
+  rows+=row(C.rowAgit,A.agit,B.agit,dots(A.agit)+' '+t('agit')[A.agit],dots(B.agit)+' '+t('agit')[B.agit],false);
+  rows+=row(C.rowDrone,A.drone,B.drone,dots(A.drone)+' '+t('droneL')[A.drone],dots(B.drone)+' '+t('droneL')[B.drone],true);
+  rows+=row(C.rowDilute,undefined,undefined,dil[A.dilute]||A.dilute,dil[B.dilute]||B.dilute);
+  rows+=row(C.rowStore,undefined,undefined,A.store[lang],B.store[lang]);
+  rows+=row(C.rowSafe,undefined,undefined,A.safe[lang],B.safe[lang]);
+  return `<div class="cmptable"><div class="hrow" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:1.05rem">${C.title.replace('{a}',A.c+' '+A.n[lang]).replace('{b}',B.c+' '+B.n[lang])}</b><button class="btn-clear" onclick="clearCmp()">${C.clear}</button></div>
+  <table><tr><th></th><th>${A.c}</th><th>${B.c}</th></tr>${rows}</table>
+  <div class="empty" style="margin-top:8px;text-align:left">${C.note}</div>
+  ${A.spray&&B.spray?`<button class="seg-share" style="background:var(--water)" onclick="toCalc('${A.c}','A');toCalcB('${B.c}')">${C.toPrice}</button>`:''}</div>`;
+}
+function toCalcB(code){ const f=F.find(x=>x.c===code); const st=calcState(); st.B=Object.assign({},st.B||{},{form:f.phase==='L'?'liq':'sol',code:code}); delete st.B.lu; delete st.B.pu; calcSave(st); renderSci(); }
+function backToCard(code){
+  libQ=''; libFilter='all'; show('lib'); renderLib();
+  const el=document.getElementById('card-'+code); if(el){ el.classList.add('open'); el.scrollIntoView({block:'start'}); }
+}
+function toCalc(code,k){
+  const f=F.find(x=>x.c===code); const st=calcState(); st[k]=Object.assign({},st[k]||{},{form:f.phase==='L'?'liq':'sol',code:code}); delete st[k].lu; delete st[k].pu;
+  calcSave(st); renderSci(); show('sci');
+  document.querySelectorAll('details').forEach(d=>d.open=false); const d=document.getElementById('calcOut').closest('details'); d.open=true; d.scrollIntoView();
+}
+function seg(opts,val,fnPrefix,cols){
+  return `<div class="seg" style="grid-template-columns:repeat(${cols},1fr)">${opts.map((o,i)=>{const v=(o&&o.v!==undefined)?o.v:i, l=(o&&o.l!==undefined)?o.l:o; return `<button type="button" class="${String(v)===String(val)?'on':''}" onclick="${fnPrefix}'${v}')">${l}</button>`;}).join('')}</div>`;
+}
+/* chooser */
+const PRI_DEFAULT = [2,3,4,10]; // rainfast, operator safety, hot storage
+function getPri(){
+  const saved = sessionStorage.getItem('fx_pri');
+  return saved ? JSON.parse(saved) : PRI_DEFAULT;
+}
+function setPurpose(v){
+  v=+v; sessionStorage.setItem('fx_purpose',v);
+  let pri=getPri(); const ins=(sessionStorage.getItem('fx_kind')||'0')==='1';
+  if(ins){ if(v===1){pri=pri.filter(i=>i!==1);pri.push(0);} else if(v===2){pri=pri.filter(i=>i!==0);pri.push(1);} else if(v===3){pri=pri.filter(i=>i!==1);pri.push(0);} }
+  else if(v===1){ pri=pri.filter(i=>i!==0); pri.push(1); }
+  else if(v===2){ pri=pri.filter(i=>i!==1); pri.push(0); }
+  else if(v===3){ pri=pri.filter(i=>i!==1); pri.push(0,2); }
+  sessionStorage.setItem('fx_pri',JSON.stringify([...new Set(pri)]));
+  renderPickForm(); renderPick();
+}
+function setKind(v){ sessionStorage.setItem('fx_kind',v); sessionStorage.setItem('fx_purpose','0'); renderPickForm(); renderPick(); }
+function setSprayer(v){ localStorage.setItem('fx_sprayer',v); renderPickForm(); renderPick(); }
+function setAI(v){ sessionStorage.setItem('fx_ai',v); renderPickForm(); renderPick(); }
+function renderPickForm(){
+  const kind=sessionStorage.getItem('fx_kind')||'0'; const ins=kind==='1';
+  document.getElementById('kind').innerHTML=seg(t('kinds'),kind,'setKind(',2);
+  const pv=sessionStorage.getItem('fx_purpose')||'0';
+  document.getElementById('purpose').innerHTML=seg(t(ins?'purposeI':'purpose'),pv,'setPurpose(',1);
+  document.getElementById('purposeNote').innerHTML = +pv ? `<div class="info" style="margin:8px 0 0">${t(ins?'purposeNoteI':'purposeNote')[pv]}</div>` : '';
+  const sp=localStorage.getItem('fx_sprayer')||'0';
+  document.getElementById('sprayer').innerHTML=seg(t('sprayers'),sp,'setSprayer(',1);
+  document.getElementById('sprayerNote').innerHTML = t('sprayerNote')[sp] ? `<div class="info" style="margin:8px 0 0">${t('sprayerNote')[sp]}</div>` : '';
+  const ai=sessionStorage.getItem('fx_ai')||'0';
+  document.getElementById('aiType').innerHTML=seg(t('ai'),ai,'setAI(',1);
+  const pri=getPri();
+  document.getElementById('priList').innerHTML = t('pri').map((x,i)=>`<label class="opt ${pri.includes(i)?'on':''}"><input type="checkbox" ${pri.includes(i)?'checked':''} onchange="togglePri(${i},this)">${x}</label>`).join('');
+}
+function togglePri(i,el){
+  let pri=getPri();
+  pri = el.checked ? [...new Set([...pri,i])] : pri.filter(x=>x!==i);
+  sessionStorage.setItem('fx_pri',JSON.stringify(pri));
+  el.parentElement.classList.toggle('on',el.checked);
+  renderPick();
+}
+function renderPick(){
+  const aiIdx = +(sessionStorage.getItem('fx_ai')||0);
+  const aiKey = ['','oil','solid','water'][aiIdx];
+  const pri=getPri();
+  const out=document.getElementById('pickOut');
+  if(!pri.length){ out.innerHTML=`<div class="empty">${t('noPri')}</div>`; return; }
+  const drone=(localStorage.getItem('fx_sprayer')||'0')==='2';
+  let cands = F.filter(f=>f.spray && (!aiKey || f.ai.includes(aiKey)) && !(drone && f.drone===0));
+  const max = pri.length*3 + (drone?6:0);
+  const ranked = cands.map(f=>{
+    const s = pri.reduce((a,i)=>a+f.score[i],0) + (drone?f.drone*2:0);
+    const strong = pri.filter(i=>f.score[i]===3).map(i=>t('pri')[i].split(/[（(]/)[0].trim());
+    const weak = pri.filter(i=>f.score[i]<=1).map(i=>t('priNeg')[i]);
+    return {f,s,strong,weak};
+  }).sort((a,b)=>b.s-a.s);
+  const topIdx = ranked.findIndex(r=>r.f.avail>=2 && (!drone || r.f.drone>=2));
+  out.innerHTML = `<div class="empty" style="padding:4px 0 8px;text-align:left">${t('scoreNote')}</div>` + ranked.map((r,i)=>`
+  <div class="rank ${i===topIdx?'top':''}">
+    <span>${jar(r.f.dilute,42)}</span>
+    <span><div class="n">${r.f.c}<em>${r.f.n[lang]}</em></div>
+      ${i===topIdx?`<div class="why"><b style="color:var(--water)">${t('top')}</b></div>`:''}${r.f.avail<2?`<span class="tag warn">${t('rare')}</span>`:''}${drone?`<span class="tag ${r.f.drone>=2?'water':'warn'}">${t('kDrone')}：${t('droneL')[r.f.drone]}</span>`:''}
+      <div class="why">${r.strong.length?t('why')+r.strong.join(' · '):''}</div>
+      ${r.weak.length?`<div class="why" style="color:var(--warn)">${t('cost')}${r.weak.join(' · ')}</div>`:''}
+      <div class="bar"><i style="width:${Math.round(100*r.s/max)}%"></i></div></span>
+    <span class="score">${r.s}/${max}</span>
+  </div>`).join('');
+}
+
+/* mix order */
+const MIX_ITEMS = ['WP','WG','SP','SG','EG','SC','CS','ZC','ZW','SE','OD','EC','EW','ME','DC','SL','cond','adj','dish','foliar','faa','oil','neem','orange','humic'];
+function getMix(){ const s=sessionStorage.getItem('fx_mix'); return s?JSON.parse(s):[]; }
+function setSprayerMix(v){ localStorage.setItem('fx_sprayer',v); renderMixForm(); renderMix(); renderPickForm(); renderPick(); }
+function setStage(v){ sessionStorage.setItem('fx_stage',v); renderMixForm(); renderMix(); }
+function renderMixForm(){
+  const cur=getMix();
+  const st=sessionStorage.getItem('fx_stage')||'0';
+  document.getElementById('stageSel').innerHTML=seg(t('stages'),st,'setStage(',3);
+  document.getElementById('stageNote').innerHTML = t('stageNote')[st] ? `<div class="info" style="margin:8px 0 0">${t('stageNote')[st]}</div>` : '';
+  const sp=localStorage.getItem('fx_sprayer')||'0';
+  document.getElementById('mixSprayer').innerHTML=seg(t('sprayers'),sp,'setSprayerMix(',1);
+  document.getElementById('mixSprayerNote').innerHTML = sp==='2' ? `<div class="info" style="margin:8px 0 0">${t('droneNote')}</div>` : '';
+  const item=(k)=>{
+    const f=F.find(x=>x.c===k);
+    const label = f ? `<b>${k}</b>&nbsp;<span style="color:var(--ink);font-size:0.94rem;font-weight:600">${f.n[lang]}</span>` : t('mixOther')[k];
+    if(k==='dish') return `<button type="button" class="opt banned ${sessionStorage.getItem('fx_dishinfo')==='1'?'on':''}" onclick="toggleDishInfo()"><span class="x">✗</span><span>${t('mixOther').dish}</span></button>`;
+    const q=getQty()[k]||1;
+    const chip = (f && cur.includes(k)) ? `<button type="button" class="qty" onclick="event.preventDefault();cycleQty('${k}')">×${q}</button>` : '';
+    return `<label class="opt ${cur.includes(k)?'on':''}"><input type="checkbox" ${cur.includes(k)?'checked':''} onchange="toggleMix('${k}',this)"><span>${label}</span>${chip}</label>`;
+  };
+  const pest=MIX_ITEMS.filter(k=>F.find(x=>x.c===k)), adj=MIX_ITEMS.filter(k=>!F.find(x=>x.c===k));
+  document.getElementById('mixList').innerHTML = `<div class="grp">${t('grpPest')}</div><div class="grid2">${pest.map(item).join('')}</div><div class="grp">${t('grpAdj')}</div><div class="grid2">${adj.map(item).join('')}</div>`;
+}
+function getAct(){ const s=sessionStorage.getItem('fx_act'); return s?JSON.parse(s):[]; }
+function renderActForm(){
+  const cur=getAct();
+  document.getElementById('actList').innerHTML = ACT.map(a=>`<button type="button" class="${cur.includes(a.id)?'on':''}" onclick="toggleAct('${a.id}',this)">${a.n[lang]}</button>`).join('');
+}
+function toggleAct(id,el){ let a=getAct(); a=a.includes(id)?a.filter(x=>x!==id):[...a,id]; sessionStorage.setItem('fx_act',JSON.stringify(a)); el.classList.toggle('on'); renderMix(); }
+function toggleDishInfo(){ sessionStorage.setItem('fx_dishinfo', sessionStorage.getItem('fx_dishinfo')==='1'?'0':'1'); renderMixForm(); renderMix(); }
+function getQty(){ const s=sessionStorage.getItem('fx_mixq'); return s?JSON.parse(s):{}; }
+function cycleQty(k){ const q=getQty(); q[k]=((q[k]||1)%3)+1; sessionStorage.setItem('fx_mixq',JSON.stringify(q)); renderMixForm(); renderMix(); }
+function toggleMix(k,el){
+  let m=getMix(); m = el.checked ? [...new Set([...m,k])] : m.filter(x=>x!==k);
+  sessionStorage.setItem('fx_mix',JSON.stringify(m));
+  if(!el.checked){ const q=getQty(); delete q[k]; sessionStorage.setItem('fx_mixq',JSON.stringify(q)); }
+  renderMixForm(); renderMix();
+}
+function renderMix(){
+  let m=getMix().filter(c=>c!=='dish'); const out=document.getElementById('mixOut');
+  const dishInfo = sessionStorage.getItem('fx_dishinfo')==='1' ? `<div class="note">${t('warnDish')}</div>` : '';
+  if(!m.length){ out.innerHTML=dishInfo+`<div class="empty">${t('mixNone')}</div>`; return; }
+
+  const groups=[
+    ['cond',['cond']],
+    ['dry',['WP','WG','SP','SG','EG','EP']],
+    ['flow',['SC','CS','ZC','ZW','ZE','SE','OD']],
+    ['emul',['EC','EW','ME','DC']],
+    ['sol',['SL']],
+    ['adj',['adj','foliar','faa','oil','neem','orange','humic']]
+  ];
+  const S=t('mixSteps'); const MO=t('mixOther');
+  let steps=[`<div class="step"><div>${S.fill}</div></div>`];
+  const refused = ((localStorage.getItem('fx_sprayer')||'0')==='2') ? ['oil','neem','orange','WP','CS','ZC','ZE'] : [];
+  groups.forEach(([key,codes])=>{
+    const hit=codes.filter(c=>m.includes(c) && !refused.includes(c));
+    if(!hit.length) return;
+    const Q=getQty();
+    const names = hit.map(c=>F.find(x=>x.c===c)?(Q[c]>1?`${c} ×${Q[c]}`:c):MO[c]).join(' → ');
+    steps.push(`<div class="step"><div class="codes">${names}</div><div class="h">${S[key]}</div></div>`);
+  });
+  steps.push(`<div class="step"><div>${S.top}</div></div>`);
+  steps.push(`<div class="step"><div>${t('mixSteps2').rinse}</div></div>`);
+  let warns=[];
+  const drone=(localStorage.getItem('fx_sprayer')||'0')==='2';
+  if(drone){
+    const MO3=t('mixOther'); const oils=['oil','neem','orange'].filter(c=>m.includes(c));
+    if(oils.length) warns.push(t('droneOil').replace('{list}',oils.map(c=>MO3[c]).join('、')));
+    if(m.includes('WP')) warns.push(t('droneWP'));
+    const caps=['CS','ZC','ZE'].filter(c=>m.includes(c)); if(caps.length) warns.push(t('droneCap').replace('{list}',caps.join('、')));
+    if(m.includes('EC')) warns.push(t('droneEC'));
+    m=m.filter(c=>!['oil','neem','orange','WP','CS','ZC','ZE'].includes(c));
+  }
+  const bots=['neem','orange'].filter(c=>m.includes(c));
+  { const emu2=['EC','EW','ME','EO'].filter(c=>m.includes(c)); if(emu2.length && m.includes('SL')) warns.push(t('warnSLEmu').replace(/\{c\}/g,emu2.join(' / '))); }
+  { const emu=['EC','EW','ME','SE','ZW','EO','DC'].filter(c=>m.includes(c)); if(emu.length && m.includes('adj') && !bots.length) warns.push(t('warnEmuAdj').replace('{c}',emu.join(' / '))); }
+  const Qm=getQty(); const codes=m.filter(c=>F.find(x=>x.c===c)); const total=codes.reduce((a,c)=>a+(Qm[c]||1),0); if(total>3) warns.push(t('warnMany'));
+  if(!bots.length){ const OC=t('oilCarriers'); const carriers=Object.keys(OC).filter(k=>m.includes(k)); if(carriers.length>=2){ const n=carriers.reduce((a,k)=>a+(Qm[k]||1),0); warns.push(t('warnOilStack').replace('{n}',n).replace('{list}',carriers.map(k=>OC[k]).join(' + '))); } }
+  codes.filter(c=>(Qm[c]||1)>1).forEach(c=>{ const f=F.find(x=>x.c===c); const key=f.dilute==='emu'?'warnDupSolv':(f.dilute==='sus'?'warnDupSusp':'warnDupOther'); warns.push(t(key).replace('{c}',c).replace('{n}',Qm[c])); });
+  const act=getAct().map(id=>ACT.find(a=>a.id===id)).filter(Boolean);
+  const nm=(list)=>list.map(a=>a.n[lang]).join('、');
+  const has=(tag)=>act.filter(a=>a.tags.includes(tag));
+  if((m.includes('oil')||bots.length) && has('nooil').length) warns.push(t('warnOilAct').replace('{a}',nm(has('nooil'))));
+  if(bots.length){
+    if(m.includes('neem')) warns.push(t('warnNeem'));
+    if(m.includes('orange')) warns.push(t('warnOrange'));
+    if(bots.length===2) warns.push(t('warnBoth'));
+    const P=t('botPair'); const pairs=[]; const MO2=t('mixOther');
+    if(m.includes('oil')) pairs.push(P.oil);
+    if(['adj','cond'].some(c=>m.includes(c))) pairs.push(P.spread);
+    if(['EC','ME','DC'].some(c=>m.includes(c))) pairs.push(P.solv);
+    if(m.includes('OD')) pairs.push(P.od);
+    if(m.includes('orange') && ['CS','ZC','ZW','ZE'].some(c=>m.includes(c))) pairs.push(P.cap);
+    if(m.includes('neem') && m.includes('humic')) pairs.push(P.alk);
+    if(m.includes('foliar')) pairs.push(P.ca);
+    if(pairs.length) warns.push(`<b>${P.title.replace('{b}',bots.map(c=>MO2[c]).join(' / '))}</b><br>`+pairs.map(x=>'• '+x).join('<br>'));
+  }
+  if(has('alk').length && m.includes('humic')) warns.push(t('warnAlkAct').replace('{a}',nm(has('alk'))));
+  else if(has('alk').length) warns.push(t('warnAlkAct').replace('{a}',nm(has('alk'))));
+  if(has('cu').length && has('phos').length) warns.push(t('warnCuPhos').replace('{a}',nm(has('phos'))));
+  if(has('cu').length && has('captan').length) warns.push(t('warnCaptanCu'));
+  if(has('heat').length) warns.push(t('warnSulHeat'));
+  if(m.includes('foliar') && has('metal').length) warns.push(t('warnMetalChel').replace('{a}',nm(has('metal'))));
+  if(m.includes('foliar')){ warns.push(t('warnFoliar')); if(!has('metal').length) warns.push(t('warnFoliarChel')); }
+  if(m.includes('WP') && (m.includes('EC')||m.includes('DC'))) warns.push(t('warnWPEC'));
+  if(m.includes('OD') && m.includes('WG')) warns.push(t('warnOD'));
+  if(['CS','ZC','ZW','ZE'].some(c=>m.includes(c))) warns.push(t('warnCap'));
+  if(m.includes('humic')) warns.push(t('warnHumic'));
+  if(m.includes('faa')) warns.push(t('warnFAA'));
+  if(m.includes('dish')) warns.push(t('warnDish'));
+  const stage=+(sessionStorage.getItem('fx_stage')||0);
+  const oily = m.includes('oil')||bots.length||['EC','ME','DC','OD','EO'].some(c=>m.includes(c))||['adj','cond'].some(c=>m.includes(c));
+  if(stage>0 && oily && warns.length) warns.push(t('stageEsc').replace('{s}',t('stages')[stage]));
+  out.innerHTML = dishInfo+`${warns.map(w=>`<div class="note">${w}</div>`).join('')}<div class="info">${t('jar')}</div><div class="steps">${steps.join('')}</div>
+  <button class="seg-share" onclick="shareMix()">${t('share')}</button>
+  <div class="info" style="margin-top:8px">${t('chemlog')} → <a href="https://stanleywoosweeleong.github.io/ChemLogLab2/" target="_blank" rel="noopener" style="color:var(--water);font-weight:700">ChemLog 2</a></div>`;
+  window._mixShare={warns,steps};
+}
+
+/* science */
+/* loading calculator */
+function calcState(){ const d=sessionStorage.getItem('fx_calc'); const st=d?JSON.parse(d):{A:{form:'liq'},B:{form:'liq'}}; st.tank=localStorage.getItem('fx_tank')||st.tank||16; return st; }
+function calcSave(st){ localStorage.setItem('fx_tank',st.tank||16); sessionStorage.setItem('fx_calc',JSON.stringify(st)); }
+function calcHTML(){
+  const C=t('calc'), st=calcState();
+  const col=(k)=>{const p=st[k]||{};const liq=(p.form||'liq')==='liq';
+    const lu=p.lu||(liq?'g/L':'%'); const pu=p.pu||(liq?'ml':'g');
+    const luOpts=liq?['g/L','% w/v','% w/w']:['%']; const puOpts=liq?['ml','L']:['g','kg'];
+    const presets=liq?[[100,'ml'],[250,'ml'],[500,'ml'],[1,'L'],[4,'L']]:[[100,'g'],[250,'g'],[500,'g'],[1,'kg']];
+    const sg=(name,val,opts,cols)=>seg(opts.map(o=>({v:o,l:o})),val,`calcSetVal('${k}','${name}',`,cols);
+    return `<div class="col"><b>${C[k==='A'?'ta':'tb']}${p.code?' · '+p.code:''}</b>
+    <label>${C.form}</label>${seg([{v:'liq',l:C.liq},{v:'sol',l:C.sol}],liq?'liq':'sol',`calcSetVal('${k}','form',`,1)}
+    <label>${C.load}</label><div class="u"><input type="number" inputmode="decimal" data-c="${k}.load" value="${p.load??''}" oninput="calcSet(this)"></div>${sg('lu',lu,luOpts,1)}
+    ${lu==='% w/w'?`<label>${t('calc2').den}</label><input type="number" inputmode="decimal" data-c="${k}.den" value="${p.den??''}" placeholder="1.0" oninput="calcSet(this)">`:''}
+    <label>${C.pack}</label><div class="u"><input type="number" inputmode="decimal" data-c="${k}.pack" value="${p.pack??''}" oninput="calcSet(this)"></div>${sg('pu',pu,puOpts,2)}
+    <div class="presets">${presets.map(([v,u])=>`<button type="button" class="${+p.pack===v&&pu===u?'on':''}" onclick="calcPreset('${k}',${v},'${u}')">${v} ${u}</button>`).join('')}</div>
+    <label>${C.price}</label><input type="number" inputmode="decimal" data-c="${k}.price" value="${p.price??''}" oninput="calcSet(this)">
+    <label>${C.rate}</label><div class="u rate"><input type="number" inputmode="decimal" data-c="${k}.rate" value="${p.rate??''}" oninput="calcSet(this)"></div>${seg([{v:'tank',l:`${liq?'ml':'g'} ${C.ru.tank}`},{v:'per100',l:`${liq?'ml':'g'} ${C.ru.per100}`},{v:'ratio',l:C.ru.ratio}],p.ru||'tank',`calcSetVal('${k}','ru',`,1)}
+    </div>`;};
+  const backs=['A','B'].filter(k=>st[k]&&st[k].code).map(k=>`<button class="btn-clear" style="margin-right:6px" onclick="backToCard('${st[k].code}')">← ${t('backTo').replace('{c}',st[k].code)}</button>`).join('');
+  return `<div class="calc"><div class="hrow" style="display:flex;justify-content:space-between;align-items:center"><h4 style="margin:0 0 8px">${C.title}</h4><button class="btn-clear" onclick="clearCalc()">${t('clear')}</button></div>${backs?`<div style="margin-bottom:8px">${backs}</div>`:''}<div class="cols">${col('A')}${col('B')}</div>
+  <div style="font-size:0.85rem;color:var(--ink);margin-top:6px">${C.wvHint}</div><div class="tank"><label>${C.tank}</label><input type="number" inputmode="decimal" data-c="tank" value="${st.tank??16}" oninput="calcSet(this)"></div>
+  <div id="calcOut">${calcOut()}</div></div>`;
+}
+function calcSet(el){
+  const st=calcState(); const [a,b]=el.dataset.c.split('.');
+  if(b){ st[a]=st[a]||{}; st[a][b]=el.value; } else st[a]=el.value;
+  calcSave(st);
+  if(b==='form'){ delete st[a].lu; delete st[a].pu; calcSave(st); }
+  if(b==='form'||b==='lu'||b==='pu'||b==='ru'){ renderSci(); const d=document.getElementById('calcOut').closest('details'); if(d) d.open=true; return; }
+  document.getElementById('calcOut').innerHTML=calcOut();
+}
+function calcSetVal(k,name,v){
+  const st=calcState(); st[k]=st[k]||{}; st[k][name]=v; if(name==='form'){ delete st[k].lu; delete st[k].pu; }
+  calcSave(st); renderSci(); const d=document.getElementById('calcOut').closest('details'); if(d) d.open=true;
+}
+function calcPreset(k,v,u){
+  const st=calcState(); st[k]=st[k]||{}; st[k].pack=v; st[k].pu=u;
+  calcSave(st);
+  renderSci(); const d=document.getElementById('calcOut').closest('details'); if(d) d.open=true;
+}
+function calcOne(p){
+  const liq=(p.form||'liq')==='liq';
+  let load=+p.load, pack=+p.pack; const price=+p.price, rate=+p.rate;
+  if(!(load>0&&pack>0&&price>0&&rate>0)) return null;
+  if(liq && p.lu==='% w/v') load=load*10;                 // % w/v → g/L
+  if(liq && p.lu==='% w/w') load=load*10*((+p.den)||1);   // % w/w × density → g/L
+  const pu=p.pu||(liq?'ml':'g'); if(pu==='L'||pu==='kg') pack=pack*1000;   // → ml or g
+  const tank=+(calcState().tank)||16;
+  let r=rate;                                       // amount per tank in ml or g
+  if(p.ru==='per100') r=rate*tank/100;
+  else if(p.ru==='ratio') r=tank*1000/rate;         // 1:rate → tank L ×1000 / rate
+  const ai = liq ? r/1000*load : r*load/100;
+  const cost = r/pack*price;
+  return {ai,cost,perG:cost/ai,rate:r,unit:liq?'ml':'g'};
+}
+function calcOut(){
+  const C=t('calc'), st=calcState(), A=calcOne(st.A||{}), B=calcOne(st.B||{});
+  if(!A||!B) return `<div class="info">${C.vFill}</div>`;
+  const f=(x,d)=>x.toLocaleString(undefined,{maximumFractionDigits:d});
+  const rows=[[C.ai,`${f(A.ai,1)} g`,`${f(B.ai,1)} g`],[C.measure,`${f(A.rate,1)} ${A.unit}`,`${f(B.rate,1)} ${B.unit}`],[C.cost,`RM ${f(A.cost,2)}`,`RM ${f(B.cost,2)}`],[C.perG,`RM ${f(A.perG,3)}`,`RM ${f(B.perG,3)}`]];
+  let tbl=`<table><tr><th></th><th>${C.ta}</th><th>${C.tb}</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table>`;
+  const diff=Math.abs(A.ai-B.ai)/Math.max(A.ai,B.ai);
+  let v='';
+  if(diff>0.10){ const hi=A.ai>B.ai?'A':'B', lo=hi==='A'?'B':'A'; v=`<div class="note">${C.vDiff.replace('{a}',C[hi==='A'?'ta':'tb']).replace('{b}',C[lo==='A'?'ta':'tb']).replace('{p}',f(diff*100,0))}</div>`; }
+  else { const pd=Math.abs(A.perG-B.perG)/Math.max(A.perG,B.perG);
+    if(pd<0.02) v=`<div class="info">${C.vEq}</div>`;
+    else { const c=A.perG<B.perG?'ta':'tb'; v=`<div class="info">${C.vSame.replace('{c}',C[c]).replace('{p}',f(pd*100,0))}</div>`; } }
+  const rd=Math.abs(A.rate-B.rate)/Math.max(A.rate,B.rate);
+  if(rd>0.25 && A.unit===B.unit){ const c=A.rate>B.rate?'ta':'tb'; v+=`<div class="note">${C.inert.replace('{c}',C[c]).replace('{p}',f(rd*100,0))}</div>`; }
+  return `<div class="verdict">${tbl}${v}</div>`;
+}
+function shareMix(){
+  const strip=h=>h.replace(/<br\s*\/?>/gi,'\n').replace(/<[^>]+>/g,'').replace(/&nbsp;/g,' ').trim();
+  const d=window._mixShare||{warns:[],steps:[]};
+  const stepsText=d.steps.map((h,i)=>{const el=document.createElement('div');el.innerHTML=h;const c=el.querySelector('.codes'),hh=el.querySelector('.h');return `${i+1}. `+(c?c.textContent+' — ':'')+(hh?hh.textContent:el.textContent.trim());}).join('\n');
+  const text=`${t('shareTitle')} · FormuLab 剂型通\n\n`+(d.warns.length?`${t('shareWarn')}:\n`+d.warns.map(w=>'• '+strip(w)).join('\n')+'\n\n':'')+`${t('jar')}\n\n${t('shareSteps')}:\n${stepsText}`;
+  if(navigator.share){ navigator.share({text}).catch(()=>{}); }
+  else window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank');
+}
+
+/* bottle check */
+function bottleState(){ const d=sessionStorage.getItem('fx_bottle'); return d?JSON.parse(d):{type:'SC',store:'1',age:'0',see:[]}; }
+function bottleSet(k,v){ const st=bottleState(); st[k]=v; sessionStorage.setItem('fx_bottle',JSON.stringify(st)); renderSci(); const d=document.getElementById('bottleOut').closest('details'); if(d) d.open=true; }
+function bottleSee(i,el){ const st=bottleState(); let s=st.see||[]; if(i===7) s=el.checked?[7]:[]; else { s=s.filter(x=>x!==7); s=el.checked?[...new Set([...s,i])]:s.filter(x=>x!==i); } st.see=s; sessionStorage.setItem('fx_bottle',JSON.stringify(st)); renderSci(); const d=document.getElementById('bottleOut').closest('details'); if(d) d.open=true; }
+function bottleHTML(){
+  const B=t('bottle'), st=bottleState();
+  const sel=(k,opts,val,cols)=>seg(opts,val,`bottleSet('${k}',`,cols);
+  const cur=F.find(f=>f.c===st.type)||F[0];
+  const types=seg(F.map(f=>({v:f.c,l:f.c})),cur.c,"bottleSet('type',",5).replace('class="seg"','class="seg codes"')+`<div class="seg-name">${cur.c} · ${cur.n[lang]}</div>`;
+  return `<div class="calc"><h4>${B.title}</h4>
+  <label>${B.type}</label>${types}<label>${B.store}</label>${sel('store',B.stores,st.store,1)}<label>${B.age}</label>${sel('age',B.ages,st.age,3)}
+  <label>${t('expiry')}</label>${seg(t('expiryOpts'),st.exp||'0',"bottleSet('exp',",3)}
+  <label>${B.see}</label><div class="grid2">${B.sees.map((x,i)=>`<label class="opt ${(st.see||[]).includes(i)?'on':''}"><input type="checkbox" ${(st.see||[]).includes(i)?'checked':''} onchange="bottleSee(${i},this)">${x}</label>`).join('')}</div>
+  <div id="bottleOut">${bottleOut()}</div></div>`;
+}
+function bottleOut(){
+  const B=t('bottle'), st=bottleState(), f=F.find(x=>x.c===st.type)||F[0], see=st.see||[];
+  const liquid=f.phase==='L';
+  let v,r;
+  if(see.includes(2)||see.includes(3)){v='discard';r='cake';}
+  else if(see.includes(4)){v='discard';r='gel';}
+  else if(see.includes(5)){v='discard';r='damp';}
+  else if(see.includes(6)){v='discard';r='colour';}
+  else if(see.includes(0)){v='shake';r='oil';}
+  else if(see.includes(1)){v='shake';r='sed';}
+  else if(liquid && (+st.store>=1 && +st.age>=1 || +st.age>=2)){v='jar';r='old';}
+  else if(!liquid && +st.store>=1 && +st.age>=2){v='jar';r='old';}
+  else {v='ok';r='fine';}
+  let reason=B.r[r];
+  if(v==='ok' && String(st.exp)==='1'){ v='jar'; reason=t('rExpired'); }
+  const cls=v==='discard'?'note':'info';
+  return `<div class="${cls}" style="margin-top:10px"><b>${B.v[v]}</b> — ${reason}</div>`;
+}
+function renderSci(){
+  const prevOpen=[...document.querySelectorAll('#sciList details')].map(d=>d.open); const y=window.scrollY;
+  const j3 = JAR3[lang].map((n,i)=>`<div>${jar(['sol','emu','sus'][i],72)}<div>${n}</div></div>`).join('');
+  document.getElementById('sciList').innerHTML = t('sci').map(([h,b],i)=>`<details ${i===0?'open':''}><summary>${h}</summary><div class="in">${b.replace('JAR3',j3).replace('CALC',calcHTML()).replace('BOTTLE',bottleHTML())}</div></details>`).join('') + `<div class="empty" style="margin-top:14px">${t('version')} ${APP_VER} · FormuLab 剂型通</div>`;
+  if(prevOpen.length){ [...document.querySelectorAll('#sciList details')].forEach((d,i)=>{ if(prevOpen[i]!==undefined) d.open=prevOpen[i]; }); requestAnimationFrame(()=>window.scrollTo(0,y)); }
+}
+
+/* ---------- PWA ---------- */
+if('serviceWorker' in navigator && location.protocol==='https:'){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+
+/* ---------- boot ---------- */
+if(!lang){ document.getElementById('langPick').classList.add('on'); lang='zh'; renderAll(); }
+else setLang(lang);
+</script>
+</body>
+</html>
